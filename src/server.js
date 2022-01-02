@@ -6,19 +6,37 @@ import csurf from "csurf";
 import logger from "morgan";
 import path from "path";
 import http from "http";
+import { Server } from "socket.io";
+
 import "./config/dbConnection.js";
 import handleError from "./middlewares/error.js";
 import indexRoutes from "./routes/indexRoutes.js";
 
 dotenv.config();
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
 const BASE_DIR = path.resolve();
+
+//Socket app
+
+io.on("connection", (socket) => {
+  // Welcome current user
+  socket.emit("message", "connected");
+
+  // Run when client disconnects
+  socket.on("disconnect", () => {
+    io.emit("message", "disconnected");
+  });
+});
 
 // Middlewares
 app.use(compression());
 app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static(path.join(BASE_DIR, "./uploads")));
+app.use(express.static(path.join(BASE_DIR, "public")));
+
 app.use(
   express.urlencoded({
     extended: true,
@@ -45,7 +63,6 @@ let PORT;
 if (process.env.NODE_ENV === "production") PORT = process.env.PORT;
 else PORT = process.env.DEV_PORT;
 
-const server = http.createServer(app);
 server.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
