@@ -19,7 +19,7 @@ const io = new Server(server);
 
 const BASE_DIR = path.resolve();
 
-//Socket app
+// Socket app
 
 io.on("connection", (socket) => {
   // Welcome current user
