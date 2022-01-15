@@ -1,6 +1,6 @@
 import ErrorMessage from "../utils/errorMessage.js";
 
-const handleError = (err, req, res, next) => {
+const handleError = (err, req, res) => {
   let error = { ...err };
   error.message = err.message;
   if (err.code === 11000) {
