@@ -20,6 +20,7 @@ const userSchema = mongoose.Schema(
     },
     facebook: { type: String, default: "" },
     google: { type: String, default: "" },
+    fbTokens: Array,
     sentRequest: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

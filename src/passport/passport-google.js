@@ -11,6 +11,7 @@ const googleStrategy = new GoogleStrategy(
     clientSecret: keys.google.clientSecret,
     callbackURL: keys.google.callbackURL,
     passReqToCallback: true,
+    proxy: true,
   },
   (req, accessToken, refreshToken, profile, next) => {
     User.findOne({ google: profile.id }, (err, user) => {

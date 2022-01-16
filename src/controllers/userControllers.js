@@ -7,8 +7,3 @@ export const login = (req, res) => {
   if (req.user) return res.status(200).json({ success: true, user: req.user });
   res.status(400).json({ succes: false, user: null });
 };
-
-export const googleLogin = (req, res) => {
-  if (req.user) return res.status(200).json({ success: true, user: req });
-  res.status(400).json({ success: false, user: null });
-};
