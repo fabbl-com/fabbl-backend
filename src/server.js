@@ -3,9 +3,8 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
 import handleError from "./middlewares/error.js";
-import indexRoutes from "./routes/indexRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
 import configureExpress from "./config/appConfig.js";
+import router from "./router.js";
 
 dotenv.config();
 const app = express();
@@ -32,8 +31,7 @@ io.on("connection", (socket) => {
 configureExpress(app);
 
 // Routes
-app.use("/", indexRoutes);
-app.use("/user", userRoutes);
+app.use("/", router);
 app.use(handleError);
 
 // Run the server

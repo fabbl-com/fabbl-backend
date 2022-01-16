@@ -13,9 +13,14 @@ const handleError = (err, req, res) => {
     error = new ErrorMessage(message, 400);
   }
 
-  res
-    .status(error.statusCode || 500)
-    .json({ success: false, message: error.message || "something went wrong" });
+  console.log(error.message);
+
+  if (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "something went wrong",
+    });
+  }
 };
 
 export default handleError;
