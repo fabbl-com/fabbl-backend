@@ -22,7 +22,7 @@ const connectSocket = (io) => {
   io.on("connection", (socket) => {
     console.log("connected");
 
-    socket.on("get-messages", () => getMessages(io));
+    socket.on("get-messages", (data) => getMessages(io, data));
     socket.on("send-message", (message) => sendMessage(io, message));
     socket.on("disconnect", () => disconnect(socket.id));
     socket.on("connect_error", (err) => {

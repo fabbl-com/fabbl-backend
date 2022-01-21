@@ -10,11 +10,27 @@ const defaultUser = {
   name: "Anonymous",
 };
 
-const getReceiverSocketId = (userId) =>
+const getMessagesFromDB = (userId) => {
+  console.log(userId);
+  return new Promise((resolve, reject) => {
+    Message.find(
+      {
+        $or: [{ sender: userId }, { receiver: userId }],
+      },
+      (err, messages) => {
+        console.log(messages);
+        if (err) return reject(err);
+        resolve(messages);
+      }
+    );
+  });
+};
+
+const getSocketID = (userId) =>
   new Promise((resolve, reject) => {
     User.findById(userId, (err, user) => {
       if (err) return reject(err);
-      resolve(user.id);
+      resolve(user.socketID);
     });
   });
 
@@ -28,11 +44,17 @@ const insertMessage = (message) =>
 
 const msgExpirationTimeInMS = 5 * 60 * 1000;
 
-export const getMessages = (io) => {
-  if (messages && messages.length > 0) {
-    messages.forEach((message) => {
-      io.sockets.emit("send-message", message);
-    });
+export const getMessages = async (io, data) => {
+  console.log(data);
+  try {
+    const [socketID, messages] = await Promise.all([
+      getSocketID(data.userId),
+      getMessagesFromDB(data.userId),
+    ]);
+    console.log(socketID);
+    io.to(socketID).emit("get-messages", messages);
+  } catch (err) {
+    console.log(`Error: ${err}`);
   }
 };
 
@@ -40,7 +62,7 @@ export const sendMessage = async (io, message) => {
   console.log(message.receiver);
   try {
     const result = await Promise.all([
-      getReceiverSocketId(message.receiver),
+      getSocketID(message.receiver),
       insertMessage(message),
     ]);
     io.to(result[0]).emit("add-message", message);
