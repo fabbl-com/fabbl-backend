@@ -5,29 +5,19 @@ import { Server } from "socket.io";
 import handleError from "./middlewares/error.js";
 import configureExpress from "./config/appConfig.js";
 import router from "./router.js";
+import connectSocket from "./socket.io.js";
 
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
 
-// Socket app
-
-io.on("connection", (socket) => {
-  // Welcome current user
-  console.log("connected");
-
-  // Run when client disconnects
-  socket.on("disconnect", () => {
-    io.emit("message", "disconnected");
-  });
-});
-
+connectSocket(io);
 configureExpress(app);
 
 // Routes

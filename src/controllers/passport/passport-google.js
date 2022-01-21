@@ -1,7 +1,7 @@
 import passportGoogle from "passport-google-oauth20";
-import keys from "../config/keys.js";
-import User from "../models/userModel.js";
-import ErrorMessage from "../utils/errorMessage.js";
+import keys from "../../config/keys.js";
+import ErrorMessage from "../../utils/errorMessage.js";
+import User from "../../models/userModel.js";
 
 const GoogleStrategy = passportGoogle.Strategy;
 

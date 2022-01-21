@@ -1,7 +1,7 @@
 import passportFacebook from "passport-facebook";
-import keys from "../config/keys.js";
-import User from "../models/userModel.js";
-import ErrorMessage from "../utils/errorMessage.js";
+import keys from "../../config/keys.js";
+import ErrorMessage from "../../utils/errorMessage.js";
+import User from "../../models/userModel.js";
 
 const FacebookStrategy = passportFacebook.Strategy;
 
@@ -10,7 +10,7 @@ const facebookStrategy = new FacebookStrategy(
     clientID: keys.facebook.clientID,
     clientSecret: keys.facebook.clientSecret,
     callbackURL: keys.facebook.callbackURL,
-    profileFields: ["id", "email", "name"],
+    profileFields: ["id", "email", "displayName"],
     passReqToCallback: true,
     proxy: true,
   },
@@ -23,7 +23,7 @@ const facebookStrategy = new FacebookStrategy(
 
       const newUser = new User({
         facebook: profile.id,
-        displayName: { value: `${profile.first_name} ${profile.last_name}` },
+        displayName: { value: profile.displayName },
         uuid: "12345", // to be genearted
         email: profile._json.email,
         // isEmailVerifed: profile._json.email_verified,

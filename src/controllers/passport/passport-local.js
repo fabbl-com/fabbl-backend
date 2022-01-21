@@ -1,6 +1,6 @@
 import passportLocal from "passport-local";
-import User from "../models/userModel.js";
-import ErrorMessage from "../utils/errorMessage.js";
+import User from "../../models/userModel.js";
+import makeUserOnline from "../../utils/makeUserOnline.js";
 
 const LocalStrategy = passportLocal.Strategy;
 
@@ -10,24 +10,23 @@ export const localRegisterStrategy = new LocalStrategy(
     passReqToCallback: true,
   },
   (req, email, password, next) => {
-    const { uuid, displayName, avatar } = req.body;
+    const { displayName, avatar } = req.body;
     User.findOne({ email }, (err, user) => {
-      if (err) return next(new ErrorMessage(err, 400));
+      if (err) return next(err);
       console.log(user);
-      if (user) return next(new ErrorMessage("Email already exists", 400));
+      if (user) return next(null, false);
 
       const newUser = new User({
-        uuid,
         displayName: { value: displayName },
         email,
         // avatar: { value: avatar },
         password,
       });
       newUser.save((error) => {
-        if (error) return next(new ErrorMessage(error, 400));
+        if (error) return next(error);
       });
 
-      next(null, newUser);
+      next(null, newUser.id);
     });
   }
 );
@@ -42,17 +41,23 @@ export const localLoginStrategy = new LocalStrategy(
     User.findOne({ email }, (err, user) => {
       if (err) return next(err);
       if (!user)
-        return next(new ErrorMessage("Email or password is incorrect", 401));
+        return next(null, false, {
+          message: "Email or password is incorrect",
+        });
 
-      user.comparePassword(password, (err, isMatched) => {
+      user.comparePassword(password, async (err, isMatched) => {
         if (err) return next(err);
         if (!isMatched)
           return next(null, false, {
             message: "Email or password is incorrect",
           });
+        try {
+          const userId = await makeUserOnline(user.id);
+          next(null, userId);
+        } catch (err) {
+          return next(err);
+        }
       });
-
-      next(null, user);
     });
   }
 );

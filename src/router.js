@@ -5,7 +5,6 @@ import { login, register } from "./controllers/userControllers.js";
 const router = express.Router();
 
 // welcome route
-
 router.get("/", (req, res) => res.send("<h1>Hello from server</h1>"));
 
 // Auth Routes

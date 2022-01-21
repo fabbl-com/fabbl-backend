@@ -1,19 +1,22 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+import { v4 as uuidv4 } from "uuid";
 
 // 1===only me, 2===public, 3===friends
 const SALT_WORK_FACTOR = 12;
 
 const userSchema = mongoose.Schema(
   {
-    uuid: { type: String, unique: true },
+    uuid: { type: String, default: uuidv4() },
+    socketID: { type: String, default: "" },
+    online: { type: Boolean, default: false },
     displayName: {
       value: { type: String, unique: false, default: "" },
       status: { type: Number, default: 3 },
     },
     email: { type: String, unique: true },
     isEmailVerifed: { type: Boolean, default: false },
-    password: { type: String, default: "", selected: false },
+    password: { type: String },
     avatar: {
       value: { type: String, default: "defaultPic.png" },
       status: { type: Number, default: 3 },

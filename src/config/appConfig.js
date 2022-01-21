@@ -6,7 +6,7 @@ import logger from "morgan";
 import session from "express-session";
 import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
-import passport from "../passport/index.js";
+import passport from "../controllers/passport/index.js";
 
 const configureExpress = (app) => {
   const clientP = mongoose
@@ -43,8 +43,8 @@ const configureExpress = (app) => {
       }),
     })
   );
-  app.use(passport.initialize());
-  app.use(passport.session());
+  // app.use(passport.initialize());
+  // app.use(passport.session());
 
   // CSRF security for Production
   if (process.env.NODE_ENV === "production") {

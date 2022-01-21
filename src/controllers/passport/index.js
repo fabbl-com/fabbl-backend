@@ -1,8 +1,8 @@
 import passport from "passport";
-import User from "../models/userModel.js";
 import { localRegisterStrategy, localLoginStrategy } from "./passport-local.js";
 import googleStrategy from "./passport-google.js";
 import facebookStrategy from "./passport-facebook.js";
+import User from "../../models/userModel.js";
 
 passport.serializeUser((user, next) => {
   next(null, { _id: user._id });
