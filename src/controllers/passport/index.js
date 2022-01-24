@@ -1,4 +1,5 @@
 import passport from "passport";
+import util from "util";
 import { localRegisterStrategy, localLoginStrategy } from "./passport-local.js";
 import googleStrategy from "./passport-google.js";
 import facebookStrategy from "./passport-facebook.js";
@@ -9,6 +10,8 @@ passport.serializeUser((user, next) => {
 });
 
 passport.deserializeUser((id, next) => {
+  console.log(util.inspect(id, false, null, true));
+
   User.findById(id, (err, user) => {
     next(err, user);
   });

@@ -15,7 +15,7 @@ const connectSocket = (io) => {
       });
       next();
     } catch (error) {
-      console.error(error);
+      // console.error(error);
     }
   });
 

@@ -36,15 +36,15 @@ const configureExpress = (app) => {
     session({
       secret: process.env.SECRET,
       resave: false,
-      saveUninitialized: false,
+      saveUninitialized: true,
       store: MongoStore.create({
         clientPromise: clientP,
         dbName: "fabbleDB",
       }),
     })
   );
-  // app.use(passport.initialize());
-  // app.use(passport.session());
+  passport.initialize();
+  passport.session();
 
   // CSRF security for Production
   if (process.env.NODE_ENV === "production") {

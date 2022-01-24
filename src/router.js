@@ -8,13 +8,9 @@ const router = express.Router();
 router.get("/", (req, res) => res.send("<h1>Hello from server</h1>"));
 
 // Auth Routes
-router.post(
-  "/auth/register",
-  passport.authenticate("local.register"),
-  register
-);
+router.post("/auth/register", register);
 
-router.post("/auth/login", passport.authenticate("local.login"), login);
+router.post("/auth/login", login);
 
 router.get(
   "/auth/google",
