@@ -10,8 +10,6 @@ passport.serializeUser((user, next) => {
 });
 
 passport.deserializeUser((id, next) => {
-  console.log(util.inspect(id, false, null, true));
-
   User.findById(id, (err, user) => {
     next(err, user);
   });

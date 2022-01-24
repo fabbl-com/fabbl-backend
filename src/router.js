@@ -23,10 +23,22 @@ router.get(
   })
 );
 
-router.get("/auth/google/callback", passport.authenticate("google"), login);
+router.get(
+  "/auth/google/callback",
+  passport.authenticate("google"),
+  (req, res) => {
+    res.redirect(`http://localhost:3000?userId=${req.user}`);
+  }
+);
 
 router.get("/auth/facebook", passport.authenticate("facebook"));
 
-router.get("/auth/facebook/callback", passport.authenticate("facebook"), login);
+router.get(
+  "/auth/facebook/callback",
+  passport.authenticate("facebook"),
+  (req, res) => {
+    res.redirect(`http://localhost:3000?userId=${req.user}`);
+  }
+);
 
 export default router;
