@@ -9,8 +9,9 @@ import mongoose from "mongoose";
 import passport from "../controllers/passport/index.js";
 
 const configureExpress = (app) => {
+  const DB_URL = process.env.DB_URL || "mongodb://localhost/fabblDB";
   const clientP = mongoose
-    .connect("mongodb://localhost/fabbleDB", {
+    .connect(DB_URL, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     })
@@ -39,7 +40,7 @@ const configureExpress = (app) => {
       saveUninitialized: true,
       store: MongoStore.create({
         clientPromise: clientP,
-        dbName: "fabbleDB",
+        dbName: "fabblDB",
       }),
     })
   );
