@@ -1,7 +1,7 @@
 import express from "express";
 import passport from "passport";
 import { login, register } from "./controllers/userControllers.js";
-
+import {currentUserProfile,addUserProfile} from "./controllers/profileControllers"
 const router = express.Router();
 
 // welcome route
@@ -32,5 +32,15 @@ router.get("/auth/google/callback", passport.authenticate("google"), login);
 router.get("/auth/facebook", passport.authenticate("facebook"));
 
 router.get("/auth/facebook/callback", passport.authenticate("facebook"), login);
+
+router.get('/user/profile/:id', async (req, res) => {
+  req.isAuthenticated;
+  currentUserProfile
+});
+
+router.post('/user/profile/:id', async (req, res) => {
+  req.isAuthenticated;
+  updateUserProfile
+});
 
 export default router;
