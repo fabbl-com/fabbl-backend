@@ -6,7 +6,7 @@ import User from "../models/userModel.js";
 
 export const currentUserProfile = async (req, res, userId) => {
   try {
-    const profile = await User.findById(userId);
+    const profile = await User.findById(userId).select("-password");
     if (!profile) {
       return res
         .status(400)
@@ -37,34 +37,25 @@ export const updateSettings = async (req, res, userId) => {
     hobbies,
     autoDelete,
   } = req.body;
-  const profileData = {};
-  profileData.settings = {};
-  profileData.displayName = {};
-  profileData.gender = {};
-  profileData.headline = {};
-  profileData.dob = {};
-  profileData.city = {};
-  profileData.country = {};
-  profileData.relationshipStatus = {};
-  profileData.hobby = {};
 
-  if (username) profileData.displayName.status = username;
-  if (genderPref) profileData.gender.status = genderPref;
-  if (bio) profileData.headline.status = bio;
-  if (age) profileData.dob.status = age;
-  if (location) profileData.city.status = location;
-  if (location) profileData.country.status = location;
-  if (relationshipStatusPref)
-    profileData.relationshipStatus.status = relationshipStatusPref;
-  if (hobbies) profileData.hobby.status = hobbies;
-  if (theme) profileData.settings.theme = theme;
-  if (autoDelete) profileData.settings.autoDelete = autoDelete;
   try {
+    const profileData = await User.findById(userId);
+
+    profileData.displayName.status = username;
+    profileData.gender.status = genderPref;
+    profileData.headline.status = bio;
+    profileData.dob.status = age;
+    profileData.city.status = location;
+    profileData.country.status = location;
+    profileData.relationshipStatus.status = relationshipStatusPref;
+    profileData.hobby.status = hobbies;
+    profileData.settings.theme = theme;
+    profileData.settings.autoDelete = autoDelete;
     const profile = await User.findByIdAndUpdate(
       userId,
       { $set: profileData },
       { new: true, upsert: true }
-    );
+    ).select("-password");
     return res.status(200).json({ success: true, profile });
   } catch (err) {
     console.error(err);
@@ -88,31 +79,24 @@ export const updatePersonalData = async (req, res, userId) => {
     relationshipStatusData,
     hobbiesData,
   } = req.body;
-  const profileData = {};
-  profileData.displayName = {};
-  profileData.gender = {};
-  profileData.headline = {};
-  profileData.dob = {};
-  profileData.city = {};
-  profileData.country = {};
-  profileData.relationshipStatus = {};
-  profileData.hobby = {};
 
-  if (usernameData) profileData.displayName.value = usernameData;
-  if (genderData) profileData.gender.value = genderData;
-  if (bioData) profileData.headline.value = bioData;
-  if (ageData) profileData.dob.value = ageData;
-  if (locationData) profileData.city.value = locationData;
-  if (locationData) profileData.country.value = locationData;
-  if (relationshipStatusData)
-    profileData.relationshipStatus.value = relationshipStatusData;
-  if (hobbiesData) profileData.hobby.value = hobbiesData;
   try {
+    const profileData = await User.findById(userId);
+
+    profileData.displayName.value = usernameData;
+    profileData.gender.value = genderData;
+    profileData.headline.value = bioData;
+    profileData.dob.value = ageData;
+    profileData.city.value = locationData;
+    profileData.country.value = locationData;
+
+    profileData.relationshipStatus.value = relationshipStatusData;
+    profileData.hobby.value = hobbiesData;
     const profile = await User.findByIdAndUpdate(
       userId,
       { $set: profileData },
       { new: true, upsert: true }
-    );
+    ).select("-password");
     return res.status(200).json({ success: true, profile });
   } catch (err) {
     console.error(err);
