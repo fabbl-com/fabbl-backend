@@ -1,4 +1,5 @@
 import passport from "passport";
+import Message from "../models/messageModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 
 export const register = (req, res, next) => {
@@ -26,4 +27,25 @@ export const login = (req, res, next) => {
       return res.status(200).json({ success: true, userId: user });
     });
   })(req, res, next);
+};
+
+export const getMessages = async (req, res, next) => {
+  try {
+    const { sender, receiver } = req.body;
+    if (!sender || !receiver)
+      return next(new ErrorMessage("User Id required!", 400));
+    const messages = await Message.find({
+      $or: [
+        {
+          $and: [{ sender }, { receiver }],
+        },
+        {
+          $and: [{ sender: receiver }, { receiver: sender }],
+        },
+      ],
+    });
+    res.status(200).json({ success: true, messages });
+  } catch (err) {
+    next(err);
+  }
 };

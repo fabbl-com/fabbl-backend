@@ -1,6 +1,6 @@
 import express from "express";
 import passport from "passport";
-import { login, register } from "./controllers/userControllers.js";
+import { login, register, getMessages } from "./controllers/userControllers.js";
 
 const router = express.Router();
 
@@ -41,4 +41,5 @@ router.get(
   }
 );
 
+router.post("/user/get-messages", getMessages);
 export default router;
