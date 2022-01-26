@@ -8,13 +8,9 @@ const router = express.Router();
 router.get("/", (req, res) => res.send("<h1>Hello from server</h1>"));
 
 // Auth Routes
-router.post(
-  "/auth/register",
-  passport.authenticate("local.register"),
-  register
-);
+router.post("/auth/register", register);
 
-router.post("/auth/login", passport.authenticate("local.login"), login);
+router.post("/auth/login", login);
 
 router.get(
   "/auth/google",
@@ -27,11 +23,23 @@ router.get(
   })
 );
 
-router.get("/auth/google/callback", passport.authenticate("google"), login);
+router.get(
+  "/auth/google/callback",
+  passport.authenticate("google"),
+  (req, res) => {
+    res.redirect(`http://localhost:3000?userId=${req.user}`);
+  }
+);
 
 router.get("/auth/facebook", passport.authenticate("facebook"));
 
-router.get("/auth/facebook/callback", passport.authenticate("facebook"), login);
+router.get(
+  "/auth/facebook/callback",
+  passport.authenticate("facebook"),
+  (req, res) => {
+    res.redirect(`http://localhost:3000?userId=${req.user}`);
+  }
+);
 
 router.get('/user/profile/:id', async (req, res) => {
   req.isAuthenticated;

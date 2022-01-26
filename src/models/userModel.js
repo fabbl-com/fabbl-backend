@@ -16,7 +16,7 @@ const userSchema = mongoose.Schema(
     },
     email: { type: String, unique: true },
     isEmailVerifed: { type: Boolean, default: false },
-    password: { type: String },
+    password: { type: String, default: "" },
     avatar: {
       value: { type: String, default: "defaultPic.png" },
       status: { type: Number, default: 3 },
@@ -82,7 +82,7 @@ const userSchema = mongoose.Schema(
 );
 
 userSchema.pre("save", function (next) {
-  if (this.isModified("password") || this.isNew) {
+  if (this.isModified("password")) {
     bcrypt.genSalt(SALT_WORK_FACTOR, (err, salt) => {
       if (err) return next(err);
 

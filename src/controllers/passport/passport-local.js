@@ -7,6 +7,7 @@ const LocalStrategy = passportLocal.Strategy;
 export const localRegisterStrategy = new LocalStrategy(
   {
     usernameField: "email",
+    passwordField: "password",
     passReqToCallback: true,
   },
   (req, email, password, next) => {
@@ -14,19 +15,21 @@ export const localRegisterStrategy = new LocalStrategy(
     User.findOne({ email }, (err, user) => {
       if (err) return next(err);
       console.log(user);
-      if (user) return next(null, false);
+      if (user)
+        return next(null, false, {
+          success: false,
+          message: "Already registered",
+        });
 
-      const newUser = new User({
+      new User({
         displayName: { value: displayName },
         email,
         // avatar: { value: avatar },
         password,
+      }).save((err, user) => {
+        if (err) return next(err);
+        next(null, user.id);
       });
-      newUser.save((error) => {
-        if (error) return next(error);
-      });
-
-      next(null, newUser.id);
     });
   }
 );
@@ -38,6 +41,7 @@ export const localLoginStrategy = new LocalStrategy(
     passReqToCallback: true,
   },
   (req, email, password, next) => {
+    console.log(email, password);
     User.findOne({ email }, (err, user) => {
       if (err) return next(err);
       if (!user)
@@ -53,8 +57,10 @@ export const localLoginStrategy = new LocalStrategy(
           });
         try {
           const userId = await makeUserOnline(user.id);
+          console.log(userId);
           next(null, userId);
         } catch (err) {
+          console.log(err);
           return next(err);
         }
       });

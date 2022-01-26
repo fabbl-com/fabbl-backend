@@ -9,8 +9,9 @@ import mongoose from "mongoose";
 import passport from "../controllers/passport/index.js";
 
 const configureExpress = (app) => {
+  const DB_URL = process.env.DB_URL || "mongodb://localhost/fabblDB";
   const clientP = mongoose
-    .connect("mongodb://localhost/fabbleDB", {
+    .connect(DB_URL, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     })
@@ -36,15 +37,15 @@ const configureExpress = (app) => {
     session({
       secret: process.env.SECRET,
       resave: false,
-      saveUninitialized: false,
+      saveUninitialized: true,
       store: MongoStore.create({
         clientPromise: clientP,
-        dbName: "fabbleDB",
+        dbName: "fabblDB",
       }),
     })
   );
-  // app.use(passport.initialize());
-  // app.use(passport.session());
+  passport.initialize();
+  passport.session();
 
   // CSRF security for Production
   if (process.env.NODE_ENV === "production") {

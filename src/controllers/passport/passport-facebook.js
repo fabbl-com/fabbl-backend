@@ -19,14 +19,23 @@ const facebookStrategy = new FacebookStrategy(
       if (err) return next(new ErrorMessage(err, 400));
       if (user) return next(null, user);
 
-      console.log(profile);
+      User.findOneAndUpdate(
+        { email: profile._json.email },
+        { google: profile.id, isEmailVerifed: profile._json.email_verified },
+        { new: true, upsert: true },
+        (err, user) => {
+          if (err) return next(err);
+          return next(null, user);
+        }
+      );
+
+      // console.log(profile);
 
       const newUser = new User({
         facebook: profile.id,
         displayName: { value: profile.displayName },
-        uuid: "12345", // to be genearted
         email: profile._json.email,
-        // isEmailVerifed: profile._json.email_verified,
+        isEmailVerifed: profile._json.email_verified,
         avatar: `https://graph.facebook.com/${profile.id}/picture?type=large`,
       });
 
