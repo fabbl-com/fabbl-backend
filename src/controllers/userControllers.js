@@ -55,12 +55,20 @@ export const updateEmail = async (req, res, userId) => {
 export const updatePassword = async (req, res, userId) => {
   const { oldPassword, newPassword } = req.body;
   try {
-    const profile = await User.findByIdAndUpdate(
-      userId,
-      { $set: newPassword },
-      { new: true, upsert: true }
-    );
-    res.status(200).json({ success: true, profile });
+    //  see if user exist
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ errors: [{ msg: "invalid credentials" }] });
+    }
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (isMatch) {
+      const profile = await User.findByIdAndUpdate(
+        userId,
+        { $set: newPassword },
+        { new: true, upsert: true }
+      );
+      res.status(200).json({ success: true, profile });
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "server error" });

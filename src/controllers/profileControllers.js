@@ -105,3 +105,9 @@ export const updatePersonalData = async (req, res, userId) => {
       .json({ success: false, message: "there is no profile for user" });
   }
 };
+
+// @route     POST  api/profile/Personal/:id
+// desc          update user profile Personal-data
+// @access  private
+
+const update
