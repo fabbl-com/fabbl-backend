@@ -3,14 +3,18 @@ import passport from "passport";
 import {
   login,
   register,
+  getMessages,
+  getAllMessagedUsers,
   updateEmail,
   updatePassword,
 } from "./controllers/userControllers.js";
+import { insertMessage } from "./utils/socket.io.js";
 import {
   currentUserProfile,
   updateSettings,
   updatePersonalData,
 } from "./controllers/profileControllers.js";
+
 const router = express.Router();
 
 // welcome route
@@ -49,6 +53,25 @@ router.get(
     res.redirect(`http://localhost:3000?userId=${req.user}`);
   }
 );
+
+router.get("/get-messages", getMessages);
+router.post("/user/get-all-users", getAllMessagedUsers);
+
+// only for testing
+router.post("/user/add-message", async (req, res, next) => {
+  try {
+    const message = {
+      sender: req.body.sender,
+      receiver: req.body.receiver,
+      text: req.body.text,
+      createdAt: req.body.createdAt,
+    };
+    const messages = await insertMessage(message);
+    res.send(messages);
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get("/user/profile/:id", async (req, res) => {
   const userId = req.params.id;

@@ -16,7 +16,7 @@ const googleStrategy = new GoogleStrategy(
     User.findOne({ google: profile.id }, (err, user) => {
       if (err) return next(err);
       if (user) return next(null, user.id);
-      console.log(user.id);
+      // console.log(user.id);
 
       User.findOneAndUpdate(
         { email: profile._json.email },
@@ -24,7 +24,7 @@ const googleStrategy = new GoogleStrategy(
         { new: true, upsert: true },
         (err, user) => {
           if (err) return next(err);
-          return next(null, user);
+          return next(null, user.id);
         }
       );
       // console.log(profile);

@@ -17,8 +17,8 @@ const io = new Server(server, {
   },
 });
 
-connectSocket(io);
 configureExpress(app);
+connectSocket(io);
 
 // Routes
 app.use("/", router);
