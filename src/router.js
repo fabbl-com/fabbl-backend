@@ -5,8 +5,15 @@ import {
   register,
   getMessages,
   getAllMessagedUsers,
+  updateEmail,
+  updatePassword,
 } from "./controllers/userControllers.js";
 import { insertMessage } from "./utils/socket.io.js";
+import {
+  currentUserProfile,
+  updateSettings,
+  updatePersonalData,
+} from "./controllers/profileControllers.js";
 
 const router = express.Router();
 
@@ -64,6 +71,30 @@ router.post("/user/add-message", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+router.get("/user/profile/:id", async (req, res) => {
+  const userId = req.params.id;
+  currentUserProfile(req, res, userId);
+});
+
+router.post("/user/profile/:id", async (req, res) => {
+  const userId = req.params.id;
+  updateSettings(req, res, userId);
+});
+router.post("/user/profile/Personal/:id", async (req, res) => {
+  const userId = req.params.id;
+  updatePersonalData(req, res, userId);
+});
+
+router.post("/user/update/email/:id", async (req, res) => {
+  const userId = req.params.id;
+  updateEmail(req, res, userId);
+});
+
+router.post("/user/update/password/:id", async (req, res) => {
+  const userId = req.params.id;
+  updatePassword(req, res, userId);
 });
 
 export default router;
