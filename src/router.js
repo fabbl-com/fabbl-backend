@@ -1,6 +1,12 @@
 import express from "express";
 import passport from "passport";
-import { login, register, getMessages } from "./controllers/userControllers.js";
+import {
+  login,
+  register,
+  getMessages,
+  getAllMessagedUsers,
+} from "./controllers/userControllers.js";
+import { insertMessage } from "./utils/socket.io.js";
 
 const router = express.Router();
 
@@ -41,5 +47,23 @@ router.get(
   }
 );
 
-router.post("/user/get-messages", getMessages);
+router.get("/get-messages", getMessages);
+router.post("/user/get-all-users", getAllMessagedUsers);
+
+// only for testing
+router.post("/user/add-message", async (req, res, next) => {
+  try {
+    const message = {
+      sender: req.body.sender,
+      receiver: req.body.receiver,
+      text: req.body.text,
+      createdAt: req.body.createdAt,
+    };
+    const messages = await insertMessage(message);
+    res.send(messages);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

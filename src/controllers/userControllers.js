@@ -1,5 +1,7 @@
 import passport from "passport";
+import mongoose from "mongoose";
 import Message from "../models/messageModel.js";
+import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 
 export const register = (req, res, next) => {
@@ -29,23 +31,28 @@ export const login = (req, res, next) => {
   })(req, res, next);
 };
 
-export const getMessages = async (req, res, next) => {
+export const getAllMessagedUsers = async (req, res, next) => {
   try {
-    const { sender, receiver } = req.body;
-    if (!sender || !receiver)
-      return next(new ErrorMessage("User Id required!", 400));
+    const { sender } = req.body;
+    if (!sender) return next(new ErrorMessage("User Id required!", 400));
     const messages = await Message.find({
-      $or: [
-        {
-          $and: [{ sender }, { receiver }],
-        },
-        {
-          $and: [{ sender: receiver }, { receiver: sender }],
-        },
-      ],
+      $or: [{ sender }, { receiver: sender }],
     });
     res.status(200).json({ success: true, messages });
   } catch (err) {
+    console.log(err);
     next(err);
+  }
+};
+
+export const getMessages = async (req, res, next) => {
+  try {
+    const { sender, receiver } = req.body;
+    const messages = await Message.findById("61f202bff23f573a1dba76b4");
+    console.log(messages);
+    res.status(200).json({ success: true, messages });
+  } catch (error) {
+    console.log(error);
+    next(error);
   }
 };

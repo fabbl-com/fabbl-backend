@@ -8,7 +8,8 @@ import {
 
 const connectSocket = (io) => {
   io.use(async (socket, next) => {
-    console.log(socket.request._query.userId);
+    const { userId } = socket.request._query;
+    console.log(typeof userId);
     try {
       await addSocketID({
         userId: socket.request._query.userId,
@@ -17,9 +18,9 @@ const connectSocket = (io) => {
       next();
     } catch (error) {
       console.error(error);
+      next(error);
     }
   });
-
   io.on("connection", (socket) => {
     console.log("connected");
 
@@ -76,7 +77,7 @@ const connectSocket = (io) => {
       } else {
         try {
           const [receiverSocketID, _] = await Promise.all([
-            getUserInfo({ userId: message.sender, socketID: true }),
+            getUserInfo({ userId: message.receiver, socketID: true }),
             insertMessage(message),
           ]);
           console.log(receiverSocketID);

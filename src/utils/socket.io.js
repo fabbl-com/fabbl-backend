@@ -34,14 +34,6 @@ export const getUserInfo = ({ userId, socketID }) => {
           resolve(res);
         }
       });
-      // .exec((err, res) => {
-      //   if (err) return reject(err);
-      //   if (socketID) {
-      //     resolve(res[0].socketID);
-      //   } else {
-      //     resolve(res);
-      //   }
-      // });
     } catch (error) {
       reject(error);
     }
@@ -92,29 +84,51 @@ export const exitChat = (userId) =>
     }
   });
 
-// const getMessagesFromDB = (userId) => {
-//   console.log(userId);
-//   return new Promise((resolve, reject) => {
-//     Message.find(
-//       {
-//         $or: [{ sender: userId }, { receiver: userId }],
-//       },
-//       (err, messages) => {
-//         console.log(messages);
-//         if (err) return reject(err);
-//         resolve(messages);
-//       }
-//     );
-//   });
-// };
-
-export const insertMessage = (message) =>
-  new Promise((resolve, reject) => {
-    new Message(message).save((err) => {
-      if (err) return reject(err);
-      resolve();
-    });
+export const insertMessage = (message) => {
+  const { sender, receiver } = message;
+  return new Promise((resolve, reject) => {
+    try {
+      Message.find(
+        {
+          message_id: {
+            $in: [`${sender}_${receiver}`, `${receiver}_${sender}`],
+          },
+        },
+        (err, doc) => {
+          if (err) return reject(err);
+          if (doc && doc.length > 0) {
+            console.log(doc);
+            Message.findOneAndUpdate(
+              {
+                message_id: {
+                  $in: [`${sender}_${receiver}`, `${receiver}_${sender}`],
+                },
+              },
+              { $push: { messages: message } },
+              { uspert: true, new: true },
+              (err, doc) => {
+                if (err) return reject(err);
+                resolve(doc);
+              }
+            );
+          } else {
+            new Message({
+              clients: [sender, receiver],
+              message_id: `${sender}_${receiver}`,
+              messages: message,
+            }).save((err, doc) => {
+              console.log(doc);
+              if (err) return reject(err);
+              resolve(doc);
+            });
+          }
+        }
+      );
+    } catch (err) {
+      reject(err);
+    }
   });
+};
 
 export const addSocketID = async ({ userId, socketID }) =>
   new Promise((resolve, reject) => {
