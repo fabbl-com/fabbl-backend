@@ -1,4 +1,5 @@
 import passport from "passport";
+import mongoose from "mongoose";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
@@ -47,14 +48,17 @@ export const getAllMessagedUsers = async (req, res, next) => {
 export const getMessages = async (req, res, next) => {
   try {
     const { sender, receiver } = req.body;
-    const messages = await Message.findById("61f202bff23f573a1dba76b4");
-    console.log(messages);
+    const messages = await Message.find({
+      message_id: {
+        $in: [`${sender}_${receiver}`, `${receiver}_${sender}`],
+      },
+    });
     res.status(200).json({ success: true, messages });
   } catch (error) {
     console.log(error);
     next(error);
   }
-}
+};
 // @route     post /user/update/email/:id
 // desc         Update user email
 // @access  private

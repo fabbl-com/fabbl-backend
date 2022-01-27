@@ -141,3 +141,22 @@ export const addSocketID = async ({ userId, socketID }) =>
       reject(error);
     }
   });
+
+export const getMessages = (sender, receiver) =>
+  new Promise((resolve, reject) => {
+    try {
+      Message.findOne(
+        {
+          message_id: {
+            $in: [`${sender}_${receiver}`, `${receiver}_${sender}`],
+          },
+        },
+        (err, messages) => {
+          if (err) return reject(err);
+          resolve(messages);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });

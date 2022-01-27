@@ -4,12 +4,13 @@ import {
   getChatList,
   insertMessage,
   exitChat,
+  getMessages,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
   io.use(async (socket, next) => {
     const { userId } = socket.request._query;
-    console.log(typeof userId);
+    console.log(userId);
     try {
       await addSocketID({
         userId: socket.request._query.userId,
@@ -110,6 +111,22 @@ const connectSocket = (io) => {
           success: false,
           message: "Something bad happend",
           userId,
+        });
+      }
+    });
+
+    socket.on("get-user-messages", async ({ sender, receiver }) => {
+      console.log(sender, receiver);
+      try {
+        const messages = await getMessages(sender, receiver);
+        io.to(socket.id).emit("get-user-messages-response", {
+          success: true,
+          messages,
+        });
+      } catch (error) {
+        io.to(socket.id).emit("get-user-messages-response", {
+          success: false,
+          messages: [],
         });
       }
     });
