@@ -31,7 +31,7 @@ export const getUserInfo = ({ userId, socketID }) => {
         if (socketID) {
           resolve(res[0].socketID);
         } else {
-          resolve(res);
+          resolve(res[0]);
         }
       });
     } catch (error) {
@@ -40,22 +40,23 @@ export const getUserInfo = ({ userId, socketID }) => {
   });
 };
 
-export const getChatList = (socketID) =>
+export const getChatList = (userId) =>
   new Promise((resolve, reject) => {
     try {
-      User.aggregate([
+      Message.aggregate([
+        { $match: { clients: mongoose.Types.ObjectId(userId) } },
+        { $unwind: "$clients" },
+        { $match: { clients: { $ne: mongoose.Types.ObjectId(userId) } } },
+        { $unwind: "$messages" },
+        { $match: { "messages.isRead": false } },
         {
-          $match: {
-            socketID: { $ne: socketID },
-          },
-        },
-        {
-          $project: {
-            uuid: true,
-            displayName: true,
-            online: true,
-            _id: false,
-            id: "$_id",
+          $group: {
+            _id: "$_id",
+            message_id: { $first: "$message_id" },
+            receiver: { $first: "$clients" },
+            unreadCount: { $sum: 1 },
+            message: { $last: "$messages.text" },
+            createdAt: { $last: "$messages.createdAt" },
           },
         },
       ]).exec((err, res) => {
