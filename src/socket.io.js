@@ -4,12 +4,13 @@ import {
   getChatList,
   insertMessage,
   exitChat,
+  getMessages,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
   io.use(async (socket, next) => {
     const { userId } = socket.request._query;
-    console.log(typeof userId);
+    console.log(userId);
     try {
       await addSocketID({
         userId: socket.request._query.userId,
@@ -23,39 +24,6 @@ const connectSocket = (io) => {
   });
   io.on("connection", (socket) => {
     console.log("connected");
-
-    socket.on("chat-list", async (data) => {
-      if (!data.userId) {
-        io.emit("chat-list-response", {
-          succes: false,
-          message: "Provide userId",
-        });
-      } else {
-        try {
-          const [userInfo, chatList] = await Promise.all([
-            getUserInfo({ userId: data.userId, socketID: false }),
-            getChatList(socket.id),
-          ]);
-          console.log(userInfo, chatList, "hi");
-          io.to(socket.id).emit("chat-list-response", {
-            success: true,
-            singleUser: false,
-            chatList,
-          });
-          socket.broadcast.emit("chat-list-response", {
-            success: true,
-            singleUser: true,
-            userInfo,
-          });
-        } catch (error) {
-          console.log(error);
-          io.to(socket.id).emit("chat-list-response", {
-            success: false,
-            chatList: [],
-          });
-        }
-      }
-    });
 
     socket.on("send-message", async (message) => {
       console.log(message);
@@ -108,8 +76,52 @@ const connectSocket = (io) => {
       } catch (error) {
         io.to(socket.id).emit("exit-chat-response", {
           success: false,
-          message: "Something bad happend",
+          message: "Something bad happened",
           userId,
+        });
+      }
+    });
+
+    socket.on("get-user-messages", async ({ sender, receiver }) => {
+      console.log(sender, receiver);
+      try {
+        const messages = await getMessages(sender, receiver);
+        io.to(socket.id).emit("get-user-messages-response", {
+          success: true,
+          messages,
+        });
+        console.log(messages);
+      } catch (error) {
+        io.to(socket.id).emit("get-user-messages-response", {
+          success: false,
+          messages: [],
+        });
+      }
+    });
+
+    socket.on("chat-list", async (userId) => {
+      console.log(userId);
+      try {
+        let messages = await getChatList(userId);
+        messages = await Promise.all(
+          messages.map(async (message) => {
+            const profile = await getUserInfo({
+              userId: message.receiver,
+              socketID: false,
+            });
+            message.profile = profile;
+            return message;
+          })
+        );
+        io.to(socket.id).emit("chat-list-response", {
+          success: true,
+          messages,
+        });
+      } catch (error) {
+        io.to(socket.id).emit("chat-list-response", {
+          success: true,
+          message: null,
+          error: "Cannot list users",
         });
       }
     });
