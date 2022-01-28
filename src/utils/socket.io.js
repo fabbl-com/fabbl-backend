@@ -47,8 +47,17 @@ export const getChatList = (userId) =>
         { $match: { clients: mongoose.Types.ObjectId(userId) } },
         { $unwind: "$clients" },
         { $match: { clients: { $ne: mongoose.Types.ObjectId(userId) } } },
+        {
+          $project: {
+            _id: true,
+            clients: true,
+            message_id: true,
+            messages: true,
+            msgCopy: "$messages",
+          },
+        },
+        // { $match: { "messages.isRead": false } },
         { $unwind: "$messages" },
-        { $match: { "messages.isRead": false } },
         {
           $group: {
             _id: "$_id",
@@ -56,9 +65,36 @@ export const getChatList = (userId) =>
             receiver: { $first: "$clients" },
             unreadCount: { $sum: 1 },
             message: { $last: "$messages.text" },
+            msgCopy: { $first: "$msgCopy" },
             createdAt: { $last: "$messages.createdAt" },
           },
         },
+        { $unwind: "$msgCopy" },
+        {
+          $match: {
+            "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
+          },
+        },
+        {
+          $group: {
+            _id: "$_id",
+            message_id: { $first: "$message_id" },
+            receiver: { $first: "$receiver" },
+            message: { $last: "$message" },
+            createdAt: { $last: "$createdAt" },
+            unread: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "receiver",
+            foreignField: "_id",
+            as: "profile",
+          },
+        },
+        { $unwind: "$profile" },
+        { $sort: { createdAt: -1 } },
       ]).exec((err, res) => {
         if (err) return reject(err);
         resolve(res);

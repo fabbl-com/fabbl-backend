@@ -90,7 +90,7 @@ const connectSocket = (io) => {
           success: true,
           messages,
         });
-        console.log(messages);
+        // console.log(messages);
       } catch (error) {
         io.to(socket.id).emit("get-user-messages-response", {
           success: false,
@@ -102,17 +102,8 @@ const connectSocket = (io) => {
     socket.on("chat-list", async (userId) => {
       console.log(userId);
       try {
-        let messages = await getChatList(userId);
-        messages = await Promise.all(
-          messages.map(async (message) => {
-            const profile = await getUserInfo({
-              userId: message.receiver,
-              socketID: false,
-            });
-            message.profile = profile;
-            return message;
-          })
-        );
+        const messages = await getChatList(userId);
+        console.log(messages);
         io.to(socket.id).emit("chat-list-response", {
           success: true,
           messages,
