@@ -1,4 +1,5 @@
 import passport from "passport";
+import bcrypt from "bcrypt";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
@@ -47,19 +48,23 @@ export const getAllMessagedUsers = async (req, res, next) => {
 export const getMessages = async (req, res, next) => {
   try {
     const { sender, receiver } = req.body;
-    const messages = await Message.findById("61f202bff23f573a1dba76b4");
-    console.log(messages);
+    const messages = await Message.find({
+      message_id: {
+        $in: [`${sender}_${receiver}`, `${receiver}_${sender}`],
+      },
+    });
     res.status(200).json({ success: true, messages });
   } catch (error) {
     console.log(error);
     next(error);
   }
-}
+};
 // @route     post /user/update/email/:id
 // desc         Update user email
 // @access  private
 
-export const updateEmail = async (req, res, userId) => {
+export const updateEmail = async (req, res) => {
+  const userId = req.params.id;
   const email = req.body;
   try {
     const profile = await User.findByIdAndUpdate(
@@ -77,7 +82,8 @@ export const updateEmail = async (req, res, userId) => {
 // @route     post /user/update/password/:id
 // desc         Update user password
 // @access  private
-export const updatePassword = async (req, res, userId) => {
+export const updatePassword = async (req, res) => {
+  const userId = req.params.id;
   const { oldPassword, newPassword } = req.body;
   try {
     //  see if user exist
@@ -90,7 +96,7 @@ export const updatePassword = async (req, res, userId) => {
       const profile = await User.findByIdAndUpdate(
         userId,
         { $set: newPassword },
-        { new: true, upsert: true }
+        { new: true }
       );
       res.status(200).json({ success: true, profile });
     }

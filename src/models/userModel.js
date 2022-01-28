@@ -27,21 +27,25 @@ const userSchema = mongoose.Schema(
     sentRequest: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        _id: false,
       },
     ],
     receivedRequest: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        _id: false,
       },
     ],
     friendsList: [
       {
-        friendId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        _id: false,
       },
     ],
     blocked: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        _id: false,
       },
     ],
     headline: {

@@ -13,6 +13,12 @@ import {
   currentUserProfile,
   updateSettings,
   updatePersonalData,
+  addFriend,
+  blockFriend,
+  sentRequest,
+  receivedRequest,
+  removeFriend,
+  removeBlock,
 } from "./controllers/profileControllers.js";
 
 const router = express.Router();
@@ -73,28 +79,17 @@ router.post("/user/add-message", async (req, res, next) => {
   }
 });
 
-router.get("/user/profile/:id", async (req, res) => {
-  const userId = req.params.id;
-  currentUserProfile(req, res, userId);
-});
-
-router.post("/user/profile/:id", async (req, res) => {
-  const userId = req.params.id;
-  updateSettings(req, res, userId);
-});
-router.post("/user/profile/Personal/:id", async (req, res) => {
-  const userId = req.params.id;
-  updatePersonalData(req, res, userId);
-});
-
-router.post("/user/update/email/:id", async (req, res) => {
-  const userId = req.params.id;
-  updateEmail(req, res, userId);
-});
-
-router.post("/user/update/password/:id", async (req, res) => {
-  const userId = req.params.id;
-  updatePassword(req, res, userId);
-});
+router.get("/user/profile/:id", currentUserProfile);
+router.post("/user/profile/:id", updateSettings);
+router.post("/user/profile/Personal/:id", updatePersonalData);
+router.post("/user/update/email/:id", updateEmail);
+router.post("/user/update/password/:id", updatePassword);
+router.post("/user/add/friend/:id", addFriend);
+router.post("/user/add/friend/:id", blockFriend);
+router.post("/user/add/block/:id", blockFriend);
+router.post("/user/add/sent-request/:id", sentRequest);
+router.post("/user/add/received-Request/:id", receivedRequest);
+router.post("/user/remove/friend/:id", removeFriend);
+router.post("/user/remove/block/:id", removeBlock);
 
 export default router;

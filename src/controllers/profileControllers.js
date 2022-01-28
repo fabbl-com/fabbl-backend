@@ -4,7 +4,8 @@ import User from "../models/userModel.js";
 // desc         get current user profile
 // @access  private
 
-export const currentUserProfile = async (req, res, userId) => {
+export const currentUserProfile = async (req, res) => {
+  const userId = req.params.id;
   try {
     const profile = await User.findById(userId).select("-password");
     if (!profile) {
@@ -25,7 +26,8 @@ export const currentUserProfile = async (req, res, userId) => {
 // desc          update user profile preferences
 // @access  private
 
-export const updateSettings = async (req, res, userId) => {
+export const updateSettings = async (req, res) => {
+  const userId = req.params.id;
   const {
     theme,
     username,
@@ -54,7 +56,7 @@ export const updateSettings = async (req, res, userId) => {
     const profile = await User.findByIdAndUpdate(
       userId,
       { $set: profileData },
-      { new: true, upsert: true }
+      { new: true }
     ).select("-password");
     return res.status(200).json({ success: true, profile });
   } catch (err) {
@@ -69,7 +71,8 @@ export const updateSettings = async (req, res, userId) => {
 // desc          update user profile Personal-data
 // @access  private
 
-export const updatePersonalData = async (req, res, userId) => {
+export const updatePersonalData = async (req, res) => {
+  const userId = req.params.id;
   const {
     usernameData,
     genderData,
@@ -95,7 +98,7 @@ export const updatePersonalData = async (req, res, userId) => {
     const profile = await User.findByIdAndUpdate(
       userId,
       { $set: profileData },
-      { new: true, upsert: true }
+      { new: true }
     ).select("-password");
     return res.status(200).json({ success: true, profile });
   } catch (err) {
@@ -106,8 +109,130 @@ export const updatePersonalData = async (req, res, userId) => {
   }
 };
 
-// @route     POST  api/profile/Personal/:id
-// desc          update user profile Personal-data
+// @route     post  /user/add/friend/:id
+// desc         add friends
 // @access  private
 
-const update
+export const addFriend = async (req, res) => {
+  const userId = req.params.id;
+  const id = { userId: req.body.userId };
+  try {
+    const profile = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { friendsList: id } },
+      { new: true }
+    );
+    return res.status(200).json({ success: true, profile });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "unable to add friends" });
+  }
+};
+
+// @route     post  /user/add/block/:id
+// desc         add block
+// @access  private
+
+export const blockFriend = async (req, res) => {
+  const userId = req.params.id;
+  const block = { userId: req.body.userId };
+  try {
+    const profile = await User.findByIdAndUpdate(
+      userId,
+      {
+        $addToSet: { blocked: block },
+      },
+      { new: true }
+    );
+    // await profile.save();
+    return res.status(200).json({ success: true, profile });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "unable to block" });
+  }
+};
+
+// @route     post  /user/add/sent-request/:id
+// desc         add sent request
+// @access  private
+
+export const sentRequest = async (req, res) => {
+  const userId = req.params.id;
+  const id = { userId: req.body.userId };
+  try {
+    const profile = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { sentRequest: id } },
+      { new: true }
+    );
+    return res.status(200).json({ success: true, profile });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "unable to sentRequest" });
+  }
+};
+
+// @route     post  /user/add/received-Request/:id
+// desc         add receivedRequest
+// @access  private
+
+export const receivedRequest = async (req, res) => {
+  const userId = req.params.id;
+  const id = { userId: req.body.userId };
+  try {
+    const profile = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { receivedRequest: id } },
+      { new: true }
+    );
+    return res.status(200).json({ success: true, profile });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .json({ success: false, message: "unable to received-Request" });
+  }
+};
+
+// @route     post  /user/remove/friend/:id
+// desc         remove friends
+// @access  private
+
+export const removeFriend = async (req, res) => {
+  const userId = req.params.id;
+  const id = { userId: req.body.userId };
+  try {
+    const profile = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { friendsList: id } },
+      { new: true }
+    );
+    return res.status(200).json({ success: true, profile });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "unable to  unfriends" });
+  }
+};
+
+// @route     post  /user/remove/block/:id
+// desc         remove block
+// @access  private
+
+export const removeBlock = async (req, res) => {
+  const userId = req.params.id;
+  const block = { userId: req.body.userId };
+  try {
+    const profile = await User.findByIdAndUpdate(
+      userId,
+      {
+        $pull: { blocked: block },
+      },
+      { new: true }
+    );
+    // await profile.save();
+    return res.status(200).json({ success: true, profile });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "unable to unblock" });
+  }
+};
