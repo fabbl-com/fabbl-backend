@@ -24,25 +24,53 @@ const userSchema = mongoose.Schema(
     facebook: { type: String, default: "" },
     google: { type: String, default: "" },
     fbTokens: Array,
-    sentRequest: [
-      {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        _id: false,
-      },
-    ],
-    receivedRequest: [
-      {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        _id: false,
-      },
-    ],
-    friendsList: [
+    // sentRequest: [
+    //   {
+    //     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    //     _id: false,
+    //   },
+    // ],
+    // receivedRequest: [
+    //   {
+    //     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    //     _id: false,
+    //   },
+    // ],
+    // friendsList: [
+    //   {
+    //     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    //     _id: false,
+    //   },
+    // ],
+    interaction: {
+      sent: [
+        {
+          userId: { type: mongoose.Types.ObjectId, ref: "User" },
+          status: { type: Number, value: 0 }, // 0 == sent, 1 == matched, 2 == friend, 3 == unfriend
+          createdAt: { type: Date, default: Date.now() },
+        },
+      ],
+      received: [
+        {
+          userId: { type: mongoose.Types.ObjectId, ref: "User" },
+          status: { type: Number, value: 0 }, // 0 == sent, 1 == matched, 2 == friend, 3 == unfriend
+          createdAt: { type: Date, default: Date.now() },
+        },
+      ],
+    },
+    friends: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         _id: false,
       },
     ],
     blocked: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        _id: false,
+      },
+    ],
+    viewed: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         _id: false,
@@ -67,7 +95,7 @@ const userSchema = mongoose.Schema(
     },
     relationshipStatus: {
       status: { type: Number, default: 2 },
-      value: { type: String, default: "" },
+      value: { type: String, default: "" }, // ["single", "commited", "married", "heart-broken"];
     },
     city: {
       value: { type: String, default: "" },
@@ -81,6 +109,7 @@ const userSchema = mongoose.Schema(
       theme: { type: Number, default: 1 }, // 1===dark, 0===light
       autoDelete: { type: Number, default: 10 }, // [10, 20, 15, 5]
     },
+    lastLogin: { type: Date, default: Date.now() },
   },
   { timestamps: true }
 );

@@ -9,6 +9,7 @@ import {
   updatePassword,
 } from "./controllers/userControllers.js";
 import { insertMessage } from "./utils/socket.io.js";
+// import { insertUser } from "./test/controllers.js";
 import {
   currentUserProfile,
   updateSettings,
@@ -91,5 +92,7 @@ router.post("/user/add/sent-request/:id", sentRequest);
 router.post("/user/add/received-Request/:id", receivedRequest);
 router.post("/user/remove/friend/:id", removeFriend);
 router.post("/user/remove/block/:id", removeBlock);
+
+// router.post("/test/add-many", insertUser);
 
 export default router;

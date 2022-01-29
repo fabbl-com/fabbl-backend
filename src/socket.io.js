@@ -5,11 +5,12 @@ import {
   insertMessage,
   exitChat,
   getMessages,
+  getRandomUsers,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
   io.use(async (socket, next) => {
-    const { userId } = socket.request._query;
+    const { userId } = await socket.request._query;
     console.log(userId);
     try {
       await addSocketID({
@@ -110,9 +111,41 @@ const connectSocket = (io) => {
         });
       } catch (error) {
         io.to(socket.id).emit("chat-list-response", {
-          success: true,
+          success: false,
           message: null,
           error: "Cannot list users",
+        });
+      }
+    });
+
+    socket.on("get-random-users", async ({ userId, page, limit, choices }) => {
+      try {
+        const user = await getUserInfo({ userId, socketID: false });
+        console.log(user.viewed);
+        const baseUser = {
+          viewed: user.viewed,
+          dob: new Date(user.dob.value).getTime(),
+          hobby: user.hobby.value,
+          gender: user.gender.value,
+        };
+        const users = await getRandomUsers(
+          userId,
+          page,
+          limit,
+          choices,
+          baseUser
+        );
+        console.log(users[0].data[0]);
+        io.to(socket.id).emit("get-random-users-response", {
+          success: false,
+          users: users[0].data,
+          error: "Cannot fetch users",
+        });
+      } catch (error) {
+        io.to(socket.id).emit("get-random-users-response", {
+          success: false,
+          users: [],
+          error: "Cannot fetch users",
         });
       }
     });

@@ -10,11 +10,12 @@ export const getUserInfo = ({ userId, socketID }) => {
     };
   } else {
     query = {
-      uuid: true,
-      displayName: true,
-      online: true,
       _id: false,
       id: "$_id",
+      hobby: true,
+      dob: true,
+      viewed: true,
+      gender: true,
     };
   }
   return new Promise((resolve, reject) => {
@@ -197,3 +198,130 @@ export const getMessages = (sender, receiver) =>
       reject(error);
     }
   });
+
+export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
+  console.log(userId, page, limit, choices, baseUser);
+  const skip = ((page || 1) - 1) * limit;
+  return new Promise((resolve, reject) => {
+    const stage1 = {
+      _id: { $not: { $in: baseUser.viewed } },
+      "gender.value": choices.gender || baseUser.gender,
+      "blocked.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
+      "friends.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
+      "interaction.received.userId": {
+        $not: { $in: [mongoose.Types.ObjectId(userId)] },
+      },
+      lastLogin: {
+        $lte: new Date(new Date() - (choices.day || 1) * 24 * 60 * 60 * 1000),
+      },
+    };
+
+    const stage2 = {
+      _id: 0,
+      id: "$_id",
+      isLiked: {
+        $in: ["interaction.sent.userId", [mongoose.Types.ObjectId(userId)]],
+      },
+      statusScore: {
+        $cond: [{ $eq: ["$relationshipStatus.value", "married"] }, 0.5, 0],
+      },
+      gender: "$gender.value",
+      isProfileVerified: 1,
+      dob: "$dob.value",
+      hobby: "$hobby.value",
+      dobDiff: { $abs: { $subtract: ["$dob.value", new Date(baseUser.dob)] } },
+      dobSum: { $add: ["$dob.value", baseUser.dob] },
+    };
+
+    const stage3 = "$hobby";
+
+    const stage4 = {
+      id: 1,
+      likedScore: { $cond: ["$likeCount", 0.9, 0] },
+      isHobby: { $in: ["$hobby", baseUser.hobby] },
+      dobSum: { $abs: { $subtract: ["$dobSum", new Date(0)] } },
+      statusScore: 1,
+      isProfileVerified: 1,
+      dobDiff: 1,
+    };
+
+    const stage5 = {
+      _id: "$id",
+      likedScore: { $first: "$likedScore" },
+      hobbyScore: { $sum: { $cond: ["$isHobby", 0.5, 0] } },
+      dobSum: { $first: "$dobSum" },
+      statusScore: { $first: "$statusScore" },
+      dobDiff: { $first: "$dobDiff" },
+      isProfileVerified: { $first: "$isProfileVerified" },
+    };
+
+    const stage6 = {
+      _id: 0,
+      id: "$_id",
+      likedScore: 1,
+      ageScore: { $multiply: [{ $divide: ["$dobDiff", "$dobSum"] }, 0.7] },
+      hobbyScore: 1,
+      statusScore: 1,
+      isProfileVerified: 1,
+      dobDiff: 1,
+      doc: "$$ROOT",
+    };
+
+    const stage7 = {
+      id: "$id",
+      score: {
+        $multiply: [
+          {
+            $add: [
+              "$doc.likedScore",
+              "$ageScore",
+              "$doc.hobbyScore",
+              "$doc.statusScore",
+            ],
+          },
+          1000,
+        ],
+      },
+    };
+
+    const stage8 = { score: -1 };
+
+    const stage9 = {
+      from: "users",
+      localField: "id",
+      foreignField: "_id",
+      as: "profile",
+    };
+
+    const stage10 = "$profile";
+
+    const stage11 = {
+      data: [{ $skip: skip }, { $limit: limit }],
+    };
+
+    try {
+      User.aggregate([
+        { $match: stage1 },
+        { $project: stage2 },
+        { $unwind: stage3 },
+        { $project: stage4 },
+        { $group: stage5 },
+        { $project: stage6 },
+        { $project: stage7 },
+        { $sort: stage8 },
+        { $lookup: stage9 },
+        { $unwind: stage10 },
+        { $facet: stage11 },
+      ]).exec((err, res) => {
+        if (err) {
+          console.log(err);
+          return reject(err);
+        }
+        // console.log(res);
+        resolve(res);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
