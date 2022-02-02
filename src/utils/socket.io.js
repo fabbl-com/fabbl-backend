@@ -71,11 +71,11 @@ export const getChatList = (userId) =>
           },
         },
         { $unwind: "$msgCopy" },
-        {
-          $match: {
-            "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
-          },
-        },
+        // {
+        //   $match: {
+        //     "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
+        //   },
+        // },
         {
           $group: {
             _id: "$_id",

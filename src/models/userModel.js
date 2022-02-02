@@ -15,7 +15,7 @@ const userSchema = mongoose.Schema(
       status: { type: Number, default: 3 },
     },
     email: { type: String, unique: true },
-    isEmailVerifed: { type: Boolean, default: false },
+    isEmailVerified: { type: Boolean, default: false },
     password: { type: String, default: "" },
     avatar: {
       value: { type: String, default: "defaultPic.png" },

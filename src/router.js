@@ -3,13 +3,14 @@ import passport from "passport";
 import {
   login,
   register,
-  getMessages,
-  getAllMessagedUsers,
   updateEmail,
   updatePassword,
+  verifyEmail,
 } from "./controllers/userControllers.js";
 import { insertMessage } from "./utils/socket.io.js";
 // import { insertUser } from "./test/controllers.js";
+import { sendVerificationMail } from "./middlewares/auth.js";
+
 import {
   currentUserProfile,
   updateSettings,
@@ -28,7 +29,7 @@ const router = express.Router();
 router.get("/", (req, res) => res.send("<h1>Hello from server</h1>"));
 
 // Auth Routes
-router.post("/auth/register", register);
+router.post("/auth/register", register, sendVerificationMail);
 
 router.post("/auth/login", login);
 
@@ -61,8 +62,9 @@ router.get(
   }
 );
 
-router.get("/get-messages", getMessages);
-router.post("/user/get-all-users", getAllMessagedUsers);
+// router.post("/auth/verify-email");
+// router.post("/auth/forget-password");
+// router.post("/auth/reset-password");
 
 // only for testing
 router.post("/user/add-message", async (req, res, next) => {
@@ -80,6 +82,7 @@ router.post("/user/add-message", async (req, res, next) => {
   }
 });
 
+router.get("/user/verify-email/:token", verifyEmail);
 router.get("/user/profile/:id", currentUserProfile);
 router.post("/user/profile/:id", updateSettings);
 router.post("/user/profile/Personal/:id", updatePersonalData);
