@@ -5,9 +5,12 @@ import sendMail from "../utils/sendMail.js";
 
 export const sendVerificationMail = async (req, res, next) => {
   console.log("users", req.user);
+  const userId = req.params.id;
 
   try {
-    const user = await User.findById(req.user).select("email isEmailVerified");
+    const user = await User.findById(req.user || userId).select(
+      "email isEmailVerified"
+    );
 
     if (!user) return next(new ErrorMessage("Register first", 400));
 

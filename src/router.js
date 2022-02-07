@@ -6,6 +6,7 @@ import {
   updateEmail,
   updatePassword,
   verifyEmail,
+  sendResetPasswordMail,
 } from "./controllers/userControllers.js";
 import { insertMessage } from "./utils/socket.io.js";
 // import { insertUser } from "./test/controllers.js";
@@ -37,9 +38,9 @@ router.get(
   "/auth/google",
   passport.authenticate("google", {
     scope: [
-      "email",
       "https://www.googleapis.com/auth/plus.login",
-      "https://www.googleapis.com/auth/plus.profile.emails.read",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile",
     ],
   })
 );
@@ -82,6 +83,8 @@ router.post("/user/add-message", async (req, res, next) => {
   }
 });
 
+router.get("/user/send-password-reset-email", sendResetPasswordMail);
+router.get("/user/send-verify-email/:id", sendVerificationMail);
 router.get("/user/verify-email/:token", verifyEmail);
 router.get("/user/profile/:id", currentUserProfile);
 router.post("/user/profile/:id", updateSettings);

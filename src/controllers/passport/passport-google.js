@@ -1,4 +1,5 @@
 import passportGoogle from "passport-google-oauth20";
+import gravatar from "gravatar";
 import keys from "../../config/keys.js";
 import User from "../../models/userModel.js";
 
@@ -13,33 +14,33 @@ const googleStrategy = new GoogleStrategy(
     proxy: true,
   },
   (req, accessToken, refreshToken, profile, next) => {
+    console.log(accessToken, refreshToken, profile);
     User.findOne({ google: profile.id }, (err, user) => {
       if (err) return next(err);
       if (user) return next(null, user.id);
       // console.log(user.id);
 
+      const avatar = gravatar.url(
+        profile._json.email,
+        { s: "100", r: "x", d: "retro" },
+        true
+      );
+
       User.findOneAndUpdate(
         { email: profile._json.email },
-        { google: profile.id, isEmailVerifed: profile._json.email_verified },
+        {
+          email: profile._json.email,
+          google: profile.id,
+          displayName: { value: profile.displayName, status: 3 },
+          isEmailVerifed: profile._json.email_verified,
+          avatar: { value: profile._json.picture || avatar, status: 3 },
+        },
         { new: true, upsert: true },
         (err, user) => {
           if (err) return next(err);
           return next(null, user.id);
         }
       );
-      // console.log(profile);
-      const newUser = new User({
-        google: profile.id,
-        displayName: { value: profile.displayName },
-        email: profile._json.email,
-        isEmailVerifed: profile._json.email_verified,
-        avatar: profile._json.picture,
-      });
-
-      newUser.save((err) => {
-        if (err) return next(err);
-        return next(null, newUser.id);
-      });
     });
   }
 );

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
+import sendMail from "../utils/sendMail.js";
 
 export const register = (req, res, next) => {
   passport.authenticate("local.register", (err, user, info) => {
@@ -34,6 +35,54 @@ export const login = (req, res, next) => {
       });
     });
   })(req, res, next);
+};
+
+export const sendResetPasswordMail = async (req, res, next) => {
+  console.log("users", req.user);
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email }).select("_id");
+
+    if (!user)
+      return res
+        .status(200)
+        .json({ success: true, message: "Password reset email sent" });
+
+    jwt.sign(
+      { userId: user._id },
+      process.env.EMAIL_VERIFICATION_TOKEN_SECERT,
+      { expiresIn: "30d" },
+      async (err, passwordResetToken) => {
+        console.log(err, passwordResetToken);
+        if (err) return next(err);
+
+        const URL = `${process.env.CLIENT_URL}/user/reset-password/?token=${passwordResetToken}`;
+
+        try {
+          const result = await sendMail(user.email, URL, "reset");
+          if (!result)
+            return next(
+              new ErrorMessage(
+                "Cannot send password reset mail. Please try again later",
+                400
+              )
+            );
+
+          res.status(200).json({
+            success: true,
+            userId: user._id,
+            message: "Password reset email sent",
+          });
+        } catch (error) {
+          console.log(error);
+          next(error);
+        }
+      }
+    );
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
 };
 
 // @route     post /user/update/email/:id

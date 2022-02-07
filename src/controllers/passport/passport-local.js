@@ -1,4 +1,5 @@
 import passportLocal from "passport-local";
+import gravatar from "gravatar";
 import User from "../../models/userModel.js";
 import makeUserOnline from "../../utils/makeUserOnline.js";
 
@@ -21,10 +22,16 @@ export const localRegisterStrategy = new LocalStrategy(
           message: "Already registered",
         });
 
+      const avatar = gravatar.url(
+        email,
+        { s: "100", r: "x", d: "retro" },
+        true
+      );
+
       new User({
         displayName: { value: displayName },
         email,
-        // avatar: { value: avatar },
+        avatar: { value: avatar, status: 3 },
         password,
       }).save((err, user) => {
         if (err) return next(err);

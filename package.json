@@ -26,6 +26,7 @@
     "express": "^4.17.2",
     "express-session": "^1.17.2",
     "googleapis": "^94.0.0",
+    "gravatar": "^1.8.2",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.1.4",
     "morgan": "^1.10.0",

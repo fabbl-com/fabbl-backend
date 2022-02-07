@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import casual from "casual";
 import { v4 as uuidv4 } from "uuid";
+import gravatar from "gravatar";
 import User from "../models/userModel.js";
 
 const getVal = () => {
@@ -186,15 +187,17 @@ const getVal = () => {
   };
 
   const gender = ["male", "female"];
+  const { email } = casual;
+  const avatar = gravatar.url(email, { s: "100", r: "x", d: "retro" }, true);
   const users = {
     uuid: uuidv4(),
     displayName: {
       value: casual.name,
       status: 3,
     },
-    email: casual.email,
+    email,
     isEmailVerifed: true,
-    password: "123456",
+    password: "$2b$12$i50RREpc.jEDQy.Y1ftwsuufs3Af5NYHpR.vMsuexVz8Ak1GQ2tR2",
     dob: {
       value: new Date(
         new Date() -
@@ -212,6 +215,10 @@ const getVal = () => {
     },
     gender: {
       value: gender[Math.floor(Math.random() * 2)],
+      status: 3,
+    },
+    avatar: {
+      value: avatar,
       status: 3,
     },
     country: {

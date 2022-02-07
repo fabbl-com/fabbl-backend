@@ -137,15 +137,14 @@ const connectSocket = (io) => {
         );
         console.log(users[0].data[0]);
         io.to(socket.id).emit("get-random-users-response", {
-          success: false,
-          users: users[0].data,
-          error: "Cannot fetch users",
+          success: true,
+          users: users[0].data
         });
       } catch (error) {
         io.to(socket.id).emit("get-random-users-response", {
           success: false,
           users: [],
-          error: "Cannot fetch users",
+          error: error.message || "Cannot fetch users",
         });
       }
     });

@@ -18,30 +18,12 @@ const userSchema = mongoose.Schema(
     isEmailVerified: { type: Boolean, default: false },
     password: { type: String, default: "" },
     avatar: {
-      value: { type: String, default: "defaultPic.png" },
+      value: { type: String, default: "" },
       status: { type: Number, default: 3 },
     },
     facebook: { type: String, default: "" },
     google: { type: String, default: "" },
     fbTokens: Array,
-    // sentRequest: [
-    //   {
-    //     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    //     _id: false,
-    //   },
-    // ],
-    // receivedRequest: [
-    //   {
-    //     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    //     _id: false,
-    //   },
-    // ],
-    // friendsList: [
-    //   {
-    //     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    //     _id: false,
-    //   },
-    // ],
     interaction: {
       sent: [
         {
@@ -81,13 +63,13 @@ const userSchema = mongoose.Schema(
       status: { type: String, default: 2 },
     },
     gender: {
-      value: String,
-      status: { type: String, default: 2 },
+      value: { type: String, default: "" },
+      status: { type: Number, default: 2 },
     },
     isProfileVerified: { type: Boolean, default: false },
     dob: {
       value: Date,
-      status: { type: String, default: 2 },
+      status: { type: Number, default: 2 },
     },
     hobby: {
       status: { type: Number, default: 2 },
