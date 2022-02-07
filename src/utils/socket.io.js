@@ -325,3 +325,54 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
     }
   });
 };
+
+export const like = ({ sent, senderId, receiverId }) => {
+  console.log(sent, senderId, receiverId);
+  let obj;
+  let userId;
+  if (sent) {
+    userId = senderId;
+    obj = {
+      "interaction.sent": {
+        userId: mongoose.Types.ObjectId(userId),
+        status: 0,
+      },
+    };
+  } else {
+    userId = receiverId;
+    obj = {
+      "interaction.received": {
+        userId: mongoose.Types.ObjectId(userId),
+      },
+    };
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      User.findByIdAndUpdate(
+        userId,
+        { $addToSet: obj },
+        { upsert: true, new: true },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      reject(error);
+    }
+  });
+};
+
+export const getLikes = ({ userId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.findById(userId)
+        .select("interaction.received")
+        .then((result) => resolve(result))
+        .catch((err) => reject(err));
+    } catch (error) {
+      console.log(error);
+      reject(error);
+    }
+  });

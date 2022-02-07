@@ -6,6 +6,8 @@ import {
   exitChat,
   getMessages,
   getRandomUsers,
+  like,
+  getLikes,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
@@ -28,17 +30,17 @@ const connectSocket = (io) => {
 
     socket.on("send-message", async (message) => {
       console.log(message);
-      if (!message?.text) {
+      if (!message.text) {
         io.to(socket.id).emit("send-message-response", {
           success: false,
           message: "Cannot send empty message",
         });
-      } else if (!message?.sender) {
+      } else if (!message.sender) {
         io.to(socket.id).emit("send-message-response", {
           success: false,
           message: "Sender required",
         });
-      } else if (!message?.receiver) {
+      } else if (!message.receiver) {
         io.to(socket.id).emit("send-message-response", {
           success: false,
           message: "receiver required",
@@ -138,13 +140,37 @@ const connectSocket = (io) => {
         console.log(users[0].data[0]);
         io.to(socket.id).emit("get-random-users-response", {
           success: true,
-          users: users[0].data
+          users: users[0].data,
         });
       } catch (error) {
         io.to(socket.id).emit("get-random-users-response", {
           success: false,
           users: [],
           error: error.message || "Cannot fetch users",
+        });
+      }
+    });
+
+    socket.on("like", async ({ senderId, receiverId }) => {
+      try {
+        const [result1, result2, socketID, likes] = await Promise.all([
+          like({ sent: true, senderId, receiverId }),
+          like({ sent: false, senderId, receiverId }),
+          getUserInfo({ userId: receiverId, socketID: true }),
+          getLikes({ userId: receiverId }),
+        ]);
+
+        console.log(result1, result2, socketID, likes.interaction.received);
+        io.to(socketID).emit("like-response", {
+          success: true,
+          likes: likes.interaction.received,
+        });
+      } catch (error) {
+        console.log(error);
+        io.to(socket.id).emit("like-response", {
+          success: false,
+          users: [],
+          message: error.message || "Cannot fetch users",
         });
       }
     });

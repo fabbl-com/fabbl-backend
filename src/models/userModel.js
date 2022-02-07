@@ -28,14 +28,14 @@ const userSchema = mongoose.Schema(
       sent: [
         {
           userId: { type: mongoose.Types.ObjectId, ref: "User" },
-          status: { type: Number, value: 0 }, // 0 == sent, 1 == matched, 2 == friend, 3 == unfriend
+          status: { type: Number, default: 0 }, // 0 == delivered, 1 == matched, 2 == friend, 3 == unfriend
           createdAt: { type: Date, default: Date.now() },
         },
       ],
       received: [
         {
           userId: { type: mongoose.Types.ObjectId, ref: "User" },
-          status: { type: Number, value: 0 }, // 0 == sent, 1 == matched, 2 == friend, 3 == unfriend
+          status: { type: Number, default: 0 }, // 0 == delivered, 1 == matched, 2 == friend, 3 == unfriend
           createdAt: { type: Date, default: Date.now() },
         },
       ],
