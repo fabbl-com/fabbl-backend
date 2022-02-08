@@ -18,7 +18,7 @@ import {
   updatePersonalData,
   addFriend,
   blockFriend,
-  sentRequest,
+  // sentRequest,
   // receivedRequest,
   removeFriend,
   removeBlock,
@@ -95,7 +95,7 @@ router.post("/user/update/password/:id", updatePassword);
 router.post("/user/add/friend/:id", addFriend);
 router.post("/user/add/view/:id", addViewed);
 router.post("/user/add/block/:id", blockFriend);
-router.post("/user/add/sent-request/:id", sentRequest);
+// router.post("/user/add/sent-request/:id", sentRequest);
 // router.post("/user/add/received-Request/:id", receivedRequest);
 router.post("/user/remove/friend/:id", removeFriend);
 router.post("/user/remove/block/:id", removeBlock);

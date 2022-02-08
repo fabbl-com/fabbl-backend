@@ -125,7 +125,7 @@ export const addFriend = async (req, res) => {
       userId,
       { $addToSet: { friends: id } },
       { new: true }
-    );
+    ).select("-password");
     return res.status(200).json({ success: true, profile });
   } catch (err) {
     console.error(err);
@@ -148,7 +148,7 @@ export const blockFriend = async (req, res) => {
         $pull: { friends: block },
       },
       { new: true }
-    );
+    ).select("-password");
     // await profile.save();
     return res.status(200).json({ success: true, profile });
   } catch (err) {
@@ -169,7 +169,7 @@ export const addViewed = async (req, res) => {
       userId,
       { $addToSet: { viewed: id } },
       { new: true }
-    );
+    ).select("-password");
     if (!profile) {
       return next(new ErrorMessage("profile not found", 401));
     }
@@ -180,46 +180,46 @@ export const addViewed = async (req, res) => {
   }
 };
 
-// @route     post  /user/add/sent-request/:id
-// desc         add sent request
-// @access  private
+// // @route     post  /user/add/sent-request/:id
+// // desc         add sent request
+// // @access  private
 
-export const sentRequest = async (req, res) => {
-  const userId = req.params.id;
-  const id = req.body.userId;
-  try {
-    const profile = await User.findByIdAndUpdate(
-      userId,
-      {
-        $push: {
-          "interaction.sent": {
-            userId: id,
-            status: 0,
-            createdAt: new Date(),
-          },
-        },
-      },
-      { new: true }
-    );
-    await User.findByIdAndUpdate(
-      id,
-      {
-        $push: {
-          "interaction.received": {
-            userId: userId,
-            status: 0,
-            createdAt: new Date(),
-          },
-        },
-      },
-      { new: true }
-    );
-    return res.status(200).json({ success: true, profile });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "unable to sentRequest" });
-  }
-};
+// export const sentRequest = async (req, res) => {
+//   const userId = req.params.id;
+//   const id = req.body.userId;
+//   try {
+//     const profile = await User.findByIdAndUpdate(
+//       userId,
+//       {
+//         $push: {
+//           "interaction.sent": {
+//             userId: id,
+//             status: 0,
+//             createdAt: new Date(),
+//           },
+//         },
+//       },
+//       { new: true }
+//     ).select("-password");
+//     await User.findByIdAndUpdate(
+//       id,
+//       {
+//         $push: {
+//           "interaction.received": {
+//             userId: userId,
+//             status: 0,
+//             createdAt: new Date(),
+//           },
+//         },
+//       },
+//       { new: true }
+//     );
+//     return res.status(200).json({ success: true, profile });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ success: false, message: "unable to sentRequest" });
+//   }
+// };
 
 // // @route     post  /user/add/received-Request/:id
 // // desc         add receivedRequest
@@ -255,7 +255,7 @@ export const removeFriend = async (req, res) => {
       userId,
       { $pull: { friends: id } },
       { new: true }
-    );
+    ).select("-password");
     return res.status(200).json({ success: true, profile });
   } catch (err) {
     console.error(err);
@@ -278,7 +278,7 @@ export const removeBlock = async (req, res) => {
         $addToSet: { friends: block },
       },
       { new: true }
-    );
+    ).select("-password");
     // await profile.save();
     return res.status(200).json({ success: true, profile });
   } catch (err) {
