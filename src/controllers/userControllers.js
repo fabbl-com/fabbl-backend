@@ -1,6 +1,6 @@
 import passport from "passport";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import util from "util";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
@@ -49,7 +49,7 @@ export const sendResetPasswordMail = async (req, res, next) => {
         .json({ success: true, message: "Password reset email sent" });
 
     jwt.sign(
-      { userId: user._id },
+      { userId: user._id, email },
       process.env.EMAIL_VERIFICATION_TOKEN_SECERT,
       { expiresIn: "30d" },
       async (err, passwordResetToken) => {
@@ -89,30 +89,47 @@ export const sendResetPasswordMail = async (req, res, next) => {
 // desc         Update user email
 // @access  private
 
-export const updateEmail = async (req, res) => {
+export const sendUpdateEmail = async (req, res, next) => {
   const userId = req.params.id;
-  const email = req.body;
+  const { email } = req.body;
+
   try {
-    const profile = await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: email,
-      },
-      {
-        new: true,
-        upsert: true,
+    const user = await User.findOne({ email }).select("_id");
+    if (user)
+      return next(new ErrorMessage("Email is already registered...", 403));
+
+    jwt.sign(
+      { userId, email },
+      process.env.EMAIL_VERIFICATION_TOKEN_SECERT,
+      { expiresIn: "30d" },
+      async (err, passwordResetToken) => {
+        console.log(err, passwordResetToken);
+        if (err) return next(new ErrorMessage(err.message, 401));
+
+        try {
+          const URL = `${process.env.CLIENT_URL}/user/verify-email/?token=${passwordResetToken}`;
+
+          const result = await sendMail(email, URL, "activate");
+          if (!result)
+            return next(
+              new ErrorMessage(
+                "Cannot send verification mail. Please try again later",
+                403
+              )
+            );
+          res.status(200).json({
+            success: true,
+            message: "Please verify your email...",
+          });
+        } catch (error) {
+          console.log(error);
+          next(error);
+        }
       }
     );
-    res.status(200).json({
-      success: true,
-      profile,
-    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "server error",
-    });
+    console.log(err);
+    next(err);
   }
 };
 
@@ -125,7 +142,7 @@ export const verifyEmail = (req, res, next) => {
       if (err) return next(new ErrorMessage(err.message, 401));
       User.findByIdAndUpdate(
         newUser.userId,
-        { $set: { isEmailVerified: true } },
+        { $set: { email: newUser.email, isEmailVerified: true } },
         (err) => {
           if (err) return next(err);
           res.status(200).json({
@@ -141,42 +158,30 @@ export const verifyEmail = (req, res, next) => {
 // @route     post /user/update/password/:id
 // desc         Update user password
 // @access  private
-export const updatePassword = async (req, res) => {
+export const updatePassword = async (req, res, next) => {
   const userId = req.params.id;
+
   const { oldPassword, newPassword } = req.body;
+  console.log(userId, oldPassword, newPassword);
   try {
-    //  see if user exist
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(400).json({
-        errors: [
-          {
-            msg: "invalid credentials",
-          },
-        ],
+    if (!user) return next(new ErrorMessage("User not found", 401));
+
+    if (oldPassword) {
+      user.comparePassword(oldPassword, async (err, isMatched) => {
+        if (err) return next(err);
+        if (!isMatched)
+          return next(new ErrorMessage("Incorrect credentails", 401));
       });
     }
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (isMatch) {
-      const profile = await User.findByIdAndUpdate(
-        userId,
-        {
-          $set: newPassword,
-        },
-        {
-          new: true,
-        }
-      );
-      res.status(200).json({
-        success: true,
-        profile,
-      });
-    }
+
+    user.password = newPassword;
+    user.save((err, doc) => {
+      if (err) return next(err);
+      return res.status(200).json({ success: true });
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "server error",
-    });
+    next(err);
   }
 };
