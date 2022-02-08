@@ -19,9 +19,10 @@ import {
   addFriend,
   blockFriend,
   sentRequest,
-  receivedRequest,
+  // receivedRequest,
   removeFriend,
   removeBlock,
+  addViewed,
 } from "./controllers/profileControllers.js";
 
 const router = express.Router();
@@ -92,10 +93,10 @@ router.post("/user/profile/Personal/:id", updatePersonalData);
 router.post("/user/update/email/:id", updateEmail);
 router.post("/user/update/password/:id", updatePassword);
 router.post("/user/add/friend/:id", addFriend);
-router.post("/user/add/friend/:id", blockFriend);
+router.post("/user/add/view/:id", addViewed);
 router.post("/user/add/block/:id", blockFriend);
 router.post("/user/add/sent-request/:id", sentRequest);
-router.post("/user/add/received-Request/:id", receivedRequest);
+// router.post("/user/add/received-Request/:id", receivedRequest);
 router.post("/user/remove/friend/:id", removeFriend);
 router.post("/user/remove/block/:id", removeBlock);
 

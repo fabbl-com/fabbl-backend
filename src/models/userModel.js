@@ -27,14 +27,14 @@ const userSchema = mongoose.Schema(
     interaction: {
       sent: [
         {
-          userId: { type: mongoose.Types.ObjectId, ref: "User" },
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
           status: { type: Number, default: 0 }, // 0 == delivered, 1 == matched, 2 == friend, 3 == unfriend
           createdAt: { type: Date, default: Date.now() },
         },
       ],
       received: [
         {
-          userId: { type: mongoose.Types.ObjectId, ref: "User" },
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
           status: { type: Number, default: 0 }, // 0 == delivered, 1 == matched, 2 == friend, 3 == unfriend
           createdAt: { type: Date, default: Date.now() },
         },
