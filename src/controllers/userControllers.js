@@ -1,6 +1,6 @@
 import passport from "passport";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import util from "util";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
@@ -158,42 +158,30 @@ export const verifyEmail = (req, res, next) => {
 // @route     post /user/update/password/:id
 // desc         Update user password
 // @access  private
-export const updatePassword = async (req, res) => {
+export const updatePassword = async (req, res, next) => {
   const userId = req.params.id;
+
   const { oldPassword, newPassword } = req.body;
+  console.log(userId, oldPassword, newPassword);
   try {
-    //  see if user exist
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(400).json({
-        errors: [
-          {
-            msg: "invalid credentials",
-          },
-        ],
+    if (!user) return next(new ErrorMessage("User not found", 401));
+
+    if (oldPassword) {
+      user.comparePassword(oldPassword, async (err, isMatched) => {
+        if (err) return next(err);
+        if (!isMatched)
+          return next(new ErrorMessage("Incorrect credentails", 401));
       });
     }
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (isMatch) {
-      const profile = await User.findByIdAndUpdate(
-        userId,
-        {
-          $set: newPassword,
-        },
-        {
-          new: true,
-        }
-      );
-      res.status(200).json({
-        success: true,
-        profile,
-      });
-    }
+
+    user.password = newPassword;
+    user.save((err, doc) => {
+      if (err) return next(err);
+      return res.status(200).json({ success: true });
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "server error",
-    });
+    next(err);
   }
 };

@@ -83,14 +83,14 @@ router.post("/user/add-message", async (req, res, next) => {
   }
 });
 
-router.get("/user/send-password-reset-email", sendResetPasswordMail);
+router.post("/user/send-reset-password-email", sendResetPasswordMail);
 router.get("/user/send-verify-email/:id", sendVerificationMail);
 router.post("/user/send-update-email/:id", sendUpdateEmail);
 router.get("/user/verify-email/:token", verifyEmail);
 router.get("/user/profile/:id", currentUserProfile);
 router.post("/user/profile/:id", updateSettings);
 router.post("/user/profile/Personal/:id", updatePersonalData);
-router.post("/user/update/password/:id", updatePassword);
+router.post("/user/update-password/:id", updatePassword);
 router.post("/user/add/friend/:id", addFriend);
 router.post("/user/add/friend/:id", blockFriend);
 router.post("/user/add/block/:id", blockFriend);
