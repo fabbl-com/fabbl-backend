@@ -205,7 +205,8 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
   return new Promise((resolve, reject) => {
     const stage1 = {
       _id: { $not: { $in: baseUser.viewed } },
-      "gender.value": choices.gender || baseUser.gender,
+      // function to find opposite gender
+      "gender.value": "male",
       "blocked.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
       "friends.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
       "interaction.received.userId": {
@@ -216,11 +217,25 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
       },
     };
 
-    const stage2 = {
+    const stage2_1 = {
+      path: "$interaction.sent",
+      preserveNullAndEmptyArrays: true,
+    };
+
+    const stage2_2 = {
       _id: 0,
       id: "$_id",
-      isLiked: {
-        $in: ["interaction.sent.userId", [mongoose.Types.ObjectId(userId)]],
+      likedScore: {
+        $cond: [
+          {
+            $in: [
+              "$interaction.sent.userId",
+              [mongoose.Types.ObjectId(userId)],
+            ],
+          },
+          5,
+          0,
+        ],
       },
       statusScore: {
         $cond: [{ $eq: ["$relationshipStatus.value", "married"] }, 0.5, 0],
@@ -237,7 +252,7 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
 
     const stage4 = {
       id: 1,
-      likedScore: { $cond: ["$likeCount", 0.9, 0] },
+      likedScore: true,
       isHobby: { $in: ["$hobby", baseUser.hobby] },
       dobSum: { $abs: { $subtract: ["$dobSum", new Date(0)] } },
       statusScore: 1,
@@ -247,7 +262,7 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
 
     const stage5 = {
       _id: "$id",
-      likedScore: { $first: "$likedScore" },
+      likedScore: { $max: "$likedScore" },
       hobbyScore: { $sum: { $cond: ["$isHobby", 0.5, 0] } },
       dobSum: { $first: "$dobSum" },
       statusScore: { $first: "$statusScore" },
@@ -258,7 +273,7 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
     const stage6 = {
       _id: 0,
       id: "$_id",
-      likedScore: 1,
+      likedScore: true,
       ageScore: { $multiply: [{ $divide: ["$dobDiff", "$dobSum"] }, 0.7] },
       hobbyScore: 1,
       statusScore: 1,
@@ -302,7 +317,8 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
     try {
       User.aggregate([
         { $match: stage1 },
-        { $project: stage2 },
+        { $unwind: stage2_1 },
+        { $project: stage2_2 },
         { $unwind: stage3 },
         { $project: stage4 },
         { $group: stage5 },
@@ -326,7 +342,30 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
   });
 };
 
-export const like = ({ sent, senderId, receiverId }) => {
+export const checkLike = ({ sent, senderId, receiverId }) => {
+  let userId;
+  let obj;
+  if (sent) {
+    userId = senderId;
+    obj = "$interaction.sent";
+  } else {
+    userId = receiverId;
+    obj = "$interaction.received";
+  }
+  return new Promise((resolve, reject) => {
+    User.aggregate([
+      { $match: { userId: mongoose.Types.ObjectId(userId) } },
+      { $project: { _id: 1, interaction: obj } },
+      { $unwind: "$interaction" },
+      { $match: { "interaction.userId": mongoose.Types.ObjectId(senderId) } },
+    ]).exec((err, res) => {
+      if (err) return reject(err);
+      resolve(res[0]?._id);
+    });
+  });
+};
+
+export const like = ({ sent, senderId, receiverId, status }) => {
   console.log(sent, senderId, receiverId);
   let obj;
   let userId;
@@ -334,15 +373,16 @@ export const like = ({ sent, senderId, receiverId }) => {
     userId = senderId;
     obj = {
       "interaction.sent": {
-        userId: mongoose.Types.ObjectId(userId),
-        status: 0,
+        userId: mongoose.Types.ObjectId(receiverId),
+        status,
       },
     };
   } else {
     userId = receiverId;
     obj = {
       "interaction.received": {
-        userId: mongoose.Types.ObjectId(userId),
+        userId: mongoose.Types.ObjectId(senderId),
+        status,
       },
     };
   }
@@ -363,6 +403,26 @@ export const like = ({ sent, senderId, receiverId }) => {
     }
   });
 };
+
+export const getMatched = ({ senderId, receiverId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.findByIdAndUpdate(
+        senderId,
+        {
+          $push: { interaction: receiverId },
+        },
+        { upsert: true },
+        (err, res) => {
+          if (err) return reject(err);
+          resolve(res);
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      reject(error);
+    }
+  });
 
 export const getLikes = ({ userId }) =>
   new Promise((resolve, reject) => {
