@@ -27,56 +27,42 @@ const userSchema = mongoose.Schema(
     interaction: {
       sent: [
         {
-          userId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            unique: true,
-          },
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
           createdAt: { type: Date, default: Date.now() },
         },
       ],
       received: [
         {
-          userId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            unique: true,
-          },
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
           createdAt: { type: Date, default: Date.now() },
         },
       ],
     },
+    matches: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        createdAt: { type: Date, default: Date.now() },
+        _id: false,
+      },
+    ],
     friends: [
       {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          unique: true,
-        },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         createdAt: { type: Date, default: Date.now() },
         _id: false,
       },
     ],
     blocked: [
       {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          unique: true,
-        },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         createdAt: { type: Date, default: Date.now() },
         _id: false,
       },
     ],
     viewed: [
       {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          unique: true,
-        },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         createdAt: { type: Date, default: Date.now() },
-        _id: false,
       },
     ],
     headline: {

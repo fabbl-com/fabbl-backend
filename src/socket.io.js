@@ -8,6 +8,9 @@ import {
   getRandomUsers,
   like,
   getLikes,
+  getMatches,
+  checkLike,
+  match,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
@@ -105,11 +108,14 @@ const connectSocket = (io) => {
     socket.on("chat-list", async (userId) => {
       console.log(userId);
       try {
-        const messages = await getChatList(userId);
-        console.log(messages);
+        const [onlyMatches, matchedAndMessaged] = await Promise.all([
+          getMatches(userId),
+          getChatList(userId),
+        ]);
+        // console.log(messages);
         io.to(socket.id).emit("chat-list-response", {
           success: true,
-          messages,
+          messages: [...onlyMatches, ...matchedAndMessaged],
         });
       } catch (error) {
         io.to(socket.id).emit("chat-list-response", {
@@ -150,21 +156,71 @@ const connectSocket = (io) => {
       }
     });
 
+    // socket.on("like", async ({ senderId, receiverId }) => {
+    //   try {
+    //     const [result1, result2, likes, socketID] = await Promise.all([
+    //       like({ sent: true, senderId, receiverId }),
+    //       like({ sent: false, senderId, receiverId }),
+    //       getLikes({ userId: receiverId }),
+    //       getUserInfo({ userId: receiverId, socketID: true }),
+    //     ]);
+
+    //     console.log(result1, result2, socketID, likes.interaction.received);
+    //     io.to(socketID).emit("like-response", {
+    //       success: true,
+    //       likes: likes.interaction.received,
+    //       isMatched: false,
+    //     });
+    //   } catch (error) {
+    //     console.log(error);
+    //     io.to(socket.id).emit("like-response", {
+    //       success: false,
+    //       users: [],
+    //       message: error.message || "Cannot fetch users",
+    //     });
+    //   }
+    // });
+
     socket.on("like", async ({ senderId, receiverId }) => {
       try {
-        const [result1, result2, likes, socketID] = await Promise.all([
-          like({ sent: true, senderId, receiverId }),
-          like({ sent: false, senderId, receiverId }),
-          getLikes({ userId: receiverId }),
-          getUserInfo({ userId: receiverId, socketID: true }),
+        const socketID = await getUserInfo({
+          userId: receiverId,
+          socketID: true,
+        });
+
+        const [user1ID, user2ID] = await Promise.all([
+          checkLike({ sent: true, senderId, receiverId }),
+          checkLike({ sent: false, senderId, receiverId }),
         ]);
 
-        console.log(result1, result2, socketID, likes.interaction.received);
-        io.to(socketID).emit("like-response", {
-          success: true,
-          likes: likes.interaction.received,
-          isMatched: false,
-        });
+        console.log(user1ID, user2ID, "checklike");
+
+        if (user1ID && user2ID) {
+          const [result1, result2] = await Promise.all([
+            match({ senderId: user1ID, receiverId: user2ID }),
+            match({ senderId: user2ID, receiverId: user1ID }),
+          ]);
+
+          console.log(result1, result2);
+
+          io.to(socketID).emit("like-response", {
+            success: true,
+            isMatched: true,
+          });
+        } else {
+          const [result1, result2, likes] = await Promise.all([
+            like({ sent: true, senderId, receiverId }),
+            like({ sent: false, senderId, receiverId }),
+            getLikes({ userId: receiverId }),
+          ]);
+
+          // console.log(result1, result2, socketID, likes.interaction.received);
+          io.to(socketID).emit("like-response", {
+            success: true,
+            likes: likes.interaction.received,
+            isMatched: false,
+          });
+        }
       } catch (error) {
         console.log(error);
         io.to(socket.id).emit("like-response", {

@@ -342,29 +342,36 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
   });
 };
 
-export const getMatches = ({ userId }) =>
+export const getMatches = (userId) =>
   new Promise((resolve, reject) => {
     User.aggregate([
+      { $match: { _id: mongoose.Types.ObjectId(userId) } },
+      { $project: { _id: 0, matches: 1 } },
+      { $unwind: "$matches" },
       {
-        $match: {
-          $and: [
-            {
-              "interaction.sent.userId": mongoose.Types.ObjectId(userId),
-            },
-            {
-              "interaction.received.userId": mongoose.Types.ObjectId(userId),
-            },
-          ],
+        $project: {
+          createdAt: "$matches.createdAt",
+          userId: "$matches.userId",
         },
       },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "profile",
+        },
+      },
+      { $unwind: "$profile" },
     ]).exec((err, res) => {
       if (err) return reject(err);
+      console.log(res);
       resolve(res);
     });
   });
 
 export const like = ({ sent, senderId, receiverId }) => {
-  console.log(sent, senderId, receiverId);
+  // console.log(sent, senderId, receiverId);
   let obj1;
   let obj2;
   if (sent) {
@@ -422,6 +429,66 @@ export const getLikes = ({ userId }) =>
         .select("interaction.received")
         .then((result) => resolve(result))
         .catch((err) => reject(err));
+    } catch (error) {
+      console.log(error);
+      reject(error);
+    }
+  });
+
+export const checkLike = ({ sent, senderId, receiverId }) => {
+  let userId;
+  let matchId;
+  let obj;
+  if (sent) {
+    userId = senderId;
+    matchId = receiverId;
+    obj = "$interaction.sent";
+  } else {
+    userId = receiverId;
+    matchId = senderId;
+    obj = "$interaction.received";
+  }
+  return new Promise((resolve, reject) => {
+    User.aggregate([
+      { $match: { _id: mongoose.Types.ObjectId(userId) } },
+      { $project: { _id: 0, interaction: obj } },
+      { $unwind: "$interaction" },
+      { $match: { "interaction.userId": mongoose.Types.ObjectId(matchId) } },
+    ]).exec((err, res) => {
+      if (err) return reject(err);
+      resolve(res[0]?.interaction?.userId);
+    });
+  });
+};
+
+export const match = ({ senderId, receiverId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(senderId),
+          matches: {
+            $not: {
+              $elemMatch: {
+                userId: mongoose.Types.ObjectId(receiverId),
+              },
+            },
+          },
+        },
+        {
+          $push: {
+            matches: {
+              userId: receiverId,
+              createdAt: new Date(),
+            },
+          },
+        },
+        (err, res) => {
+          console.log(err);
+          if (err) return reject(err);
+          resolve(res);
+        }
+      );
     } catch (error) {
       console.log(error);
       reject(error);
