@@ -8,8 +8,6 @@ import {
   getRandomUsers,
   like,
   getLikes,
-  checkLike,
-  getMatched,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
@@ -130,7 +128,7 @@ const connectSocket = (io) => {
           viewed: user.viewed,
           dob: new Date(user.dob.value).getTime(),
           hobby: user.hobby.value,
-          gender: user.gender.value,
+          gender: user.gender.value === "male" ? "female" : "male",
         };
         const users = await getRandomUsers(
           userId,
@@ -139,7 +137,6 @@ const connectSocket = (io) => {
           choices,
           baseUser
         );
-        console.log(users[0].data[0], "res");
         io.to(socket.id).emit("get-random-users-response", {
           success: true,
           users: users[0].data,
@@ -155,44 +152,19 @@ const connectSocket = (io) => {
 
     socket.on("like", async ({ senderId, receiverId }) => {
       try {
-        const socketID = await getUserInfo({
-          userId: receiverId,
-          socketID: true,
-        });
-
-        const [user1ID, user2ID] = await Promise.all([
-          checkLike({ sent: true, senderId, receiverId }),
-          checkLike({ sent: false, senderId, receiverId }),
+        const [result1, result2, likes, socketID] = await Promise.all([
+          like({ sent: true, senderId, receiverId }),
+          like({ sent: false, senderId, receiverId }),
+          getLikes({ userId: receiverId }),
+          getUserInfo({ userId: receiverId, socketID: true }),
         ]);
 
-        console.log(user1ID, user2ID);
-
-        if (user1ID && user2ID) {
-          const [result1, result2] = await Promise.all([
-            getMatched({ senderId: user1ID, receiverId: user2ID }),
-            getMatched({ senderId: user2ID, receiverId: user1ID }),
-          ]);
-
-          console.log(result1, result2);
-
-          io.to(socketID).emit("like-response", {
-            success: true,
-            isMatched: true,
-          });
-        } else {
-          const [result1, result2, likes] = await Promise.all([
-            like({ sent: true, senderId, receiverId }),
-            like({ sent: false, senderId, receiverId }),
-            getLikes({ userId: receiverId }),
-          ]);
-
-          console.log(result1, result2, socketID, likes.interaction.received);
-          io.to(socketID).emit("like-response", {
-            success: true,
-            likes: likes.interaction.received,
-            isMatched: false,
-          });
-        }
+        console.log(result1, result2, socketID, likes.interaction.received);
+        io.to(socketID).emit("like-response", {
+          success: true,
+          likes: likes.interaction.received,
+          isMatched: false,
+        });
       } catch (error) {
         console.log(error);
         io.to(socket.id).emit("like-response", {

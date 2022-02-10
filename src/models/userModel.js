@@ -27,42 +27,55 @@ const userSchema = mongoose.Schema(
     interaction: {
       sent: [
         {
-          _id: false,
-          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-          status: { type: Number, default: 0 }, // 0 == delivered, 1 == matched, 2 == friend, 3 == unfriend
+          userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            unique: true,
+          },
           createdAt: { type: Date, default: Date.now() },
         },
       ],
       received: [
         {
-          _id: false,
-          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-          status: { type: Number, default: 0 }, // 0 == delivered, 1 == matched, 2 == friend, 3 == unfriend
+          userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            unique: true,
+          },
           createdAt: { type: Date, default: Date.now() },
         },
       ],
     },
     friends: [
       {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        _id: false,
-      },
-    ],
-    matches: [
-      {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          unique: true,
+        },
+        createdAt: { type: Date, default: Date.now() },
         _id: false,
       },
     ],
     blocked: [
       {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          unique: true,
+        },
+        createdAt: { type: Date, default: Date.now() },
         _id: false,
       },
     ],
     viewed: [
       {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          unique: true,
+        },
+        createdAt: { type: Date, default: Date.now() },
         _id: false,
       },
     ],
@@ -89,11 +102,11 @@ const userSchema = mongoose.Schema(
     },
     city: {
       value: { type: String, default: "" },
-      status: { type: Number, default: 3 },
+      status: { type: Number, default: 2 },
     },
     country: {
       value: { type: String, default: "" },
-      status: { type: Number, default: 3 },
+      status: { type: Number, default: 2 },
     },
     settings: {
       theme: { type: Number, default: 1 }, // 1===dark, 0===light
