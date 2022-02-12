@@ -220,7 +220,7 @@ export const getMessages = (sender, receiver) =>
   });
 
 export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
-  console.log(userId, page, limit, choices, baseUser);
+  // console.log(userId, page, limit, choices, baseUser);
   const skip = ((page || 1) - 1) * limit;
   return new Promise((resolve, reject) => {
     const stage1 = {

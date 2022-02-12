@@ -7,10 +7,11 @@ import {
   updatePassword,
   verifyEmail,
   sendResetPasswordMail,
+  checkAuth,
 } from "./controllers/userControllers.js";
 import { insertMessage } from "./utils/socket.io.js";
 // import { insertUser } from "./test/controllers.js";
-import { sendVerificationMail } from "./middlewares/auth.js";
+import { isAuth, sendVerificationMail } from "./middlewares/auth.js";
 
 import {
   currentUserProfile,
@@ -63,6 +64,8 @@ router.get(
     res.redirect(`http://localhost:3000?userId=${req.user}`);
   }
 );
+
+router.get("/auth/check", checkAuth);
 
 // router.post("/auth/verify-email");
 // router.post("/auth/forget-password");

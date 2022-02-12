@@ -30,7 +30,6 @@ const connectSocket = (io) => {
   });
   io.on("connection", (socket) => {
     console.log("connected");
-
     socket.on("send-message", async (message) => {
       console.log(message);
       if (!message.text) {
@@ -106,7 +105,7 @@ const connectSocket = (io) => {
     });
 
     socket.on("chat-list", async (userId) => {
-      console.log(userId);
+      // console.log(userId);
       try {
         const [onlyMatches, matchedAndMessaged] = await Promise.all([
           getMatches(userId),
@@ -130,7 +129,7 @@ const connectSocket = (io) => {
     socket.on("get-random-users", async ({ userId, page, limit, choices }) => {
       try {
         const user = await getUserInfo({ userId, socketID: false });
-        console.log(user.viewed);
+        // console.log(user.viewed);
         const baseUser = {
           viewed: user.viewed,
           dob: new Date(user.dob.value).getTime(),

@@ -37,11 +37,15 @@ const configureExpress = (app) => {
     session({
       secret: process.env.SECRET,
       resave: false,
-      saveUninitialized: true,
+      saveUninitialized: false,
       store: MongoStore.create({
         clientPromise: clientP,
         dbName: "fabblDB",
       }),
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24, // 1 day
+        secure: process.env.NODE_ENV === "production",
+      },
     })
   );
   passport.initialize();

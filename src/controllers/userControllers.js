@@ -185,3 +185,8 @@ export const updatePassword = async (req, res, next) => {
     next(err);
   }
 };
+
+export const checkAuth = (req, res, next) => {
+  if (req.session.user) return res.status(200).json({ success: true });
+  return next(new ErrorMessage("Access denied", 401));
+};
