@@ -71,11 +71,11 @@ export const getChatList = (userId) =>
           },
         },
         { $unwind: "$msgCopy" },
-        // {
-        //   $match: {
-        //     "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
-        //   },
-        // },
+        {
+          $match: {
+            "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
+          },
+        },
         {
           $group: {
             _id: "$_id",
@@ -95,6 +95,27 @@ export const getChatList = (userId) =>
           },
         },
         { $unwind: "$profile" },
+        {
+          $project: {
+            userId: "$profile._id",
+            message_id: 1,
+            receiver: 1,
+            message: 1,
+            createdAt: 1,
+            displayName: "$profile.displayName",
+            unread: 1,
+            online: "$profile.online",
+            uuid: "$profile.uuid",
+            avatar: "$profile.avatar",
+            friends: "$profile.friends",
+            isFriends: {
+              $in: [
+                "$profile.friends.userId",
+                [mongoose.Types.ObjectId(userId)],
+              ],
+            },
+          },
+        },
         { $sort: { createdAt: -1 } },
       ]).exec((err, res) => {
         if (err) return reject(err);
@@ -104,7 +125,6 @@ export const getChatList = (userId) =>
       reject(error);
     }
   });
-
 export const exitChat = (userId) =>
   new Promise((resolve, reject) => {
     try {
@@ -363,9 +383,23 @@ export const getMatches = (userId) =>
         },
       },
       { $unwind: "$profile" },
+      {
+        $project: {
+          userId: "$profile._id",
+          createdAt: 1,
+          displayName: "$profile.displayName",
+          online: "$profile.online",
+          uuid: "$profile.uuid",
+          avatar: "$profile.avatar",
+          friends: "$profile.friends",
+          isFriends: {
+            $in: ["$profile.friends.userId", [mongoose.Types.ObjectId(userId)]],
+          },
+        },
+      },
     ]).exec((err, res) => {
       if (err) return reject(err);
-      console.log(res);
+      // console.log(res);
       resolve(res);
     });
   });

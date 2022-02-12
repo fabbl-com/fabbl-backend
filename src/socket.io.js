@@ -115,6 +115,7 @@ const connectSocket = (io) => {
         // console.log(messages);
         io.to(socket.id).emit("chat-list-response", {
           success: true,
+          // remove duplicates
           messages: [...onlyMatches, ...matchedAndMessaged],
         });
       } catch (error) {
