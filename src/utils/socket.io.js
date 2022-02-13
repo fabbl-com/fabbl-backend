@@ -228,6 +228,7 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
       // function to find opposite gender
       "gender.value": choices.gender || baseUser.gender,
       "blocked.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
+      "viewed.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
       "friends.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
       "interaction.received.userId": {
         $not: { $in: [mongoose.Types.ObjectId(userId)] },
@@ -510,11 +511,11 @@ export const checkLike = ({ sent, senderId, receiverId }) => {
   if (sent) {
     userId = senderId;
     matchId = receiverId;
-    obj = "$interaction.sent";
+    obj = "$interaction.received";
   } else {
     userId = receiverId;
     matchId = senderId;
-    obj = "$interaction.received";
+    obj = "$interaction.sent";
   }
   return new Promise((resolve, reject) => {
     User.aggregate([
@@ -523,8 +524,10 @@ export const checkLike = ({ sent, senderId, receiverId }) => {
       { $unwind: "$interaction" },
       { $match: { "interaction.userId": mongoose.Types.ObjectId(matchId) } },
     ]).exec((err, res) => {
+      console.log(err);
       if (err) return reject(err);
-      resolve(res[0]?.interaction?.userId);
+      console.log(res);
+      resolve(res[0]?.interaction.userId);
     });
   });
 };

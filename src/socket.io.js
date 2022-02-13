@@ -119,6 +119,7 @@ const connectSocket = (io) => {
           messages: [...onlyMatches, ...matchedAndMessaged],
         });
       } catch (error) {
+        console.log(error);
         io.to(socket.id).emit("chat-list-response", {
           success: false,
           message: null,
@@ -156,31 +157,6 @@ const connectSocket = (io) => {
         });
       }
     });
-
-    // socket.on("like", async ({ senderId, receiverId }) => {
-    //   try {
-    //     const [result1, result2, likes, socketID] = await Promise.all([
-    //       like({ sent: true, senderId, receiverId }),
-    //       like({ sent: false, senderId, receiverId }),
-    //       getLikes({ userId: receiverId }),
-    //       getUserInfo({ userId: receiverId, socketID: true }),
-    //     ]);
-
-    //     console.log(result1, result2, socketID, likes.interaction.received);
-    //     io.to(socketID).emit("like-response", {
-    //       success: true,
-    //       likes: likes.interaction.received,
-    //       isMatched: false,
-    //     });
-    //   } catch (error) {
-    //     console.log(error);
-    //     io.to(socket.id).emit("like-response", {
-    //       success: false,
-    //       users: [],
-    //       message: error.message || "Cannot fetch users",
-    //     });
-    //   }
-    // });
 
     socket.on("like", async ({ senderId, receiverId }) => {
       try {
@@ -234,7 +210,10 @@ const connectSocket = (io) => {
 
     socket.on("view", async ({ senderId, receiverId }) => {
       try {
-        const res = await setView({ userId: senderId, receiverId });
+        const res = await Promise.all([
+          // setView({ userId: senderId, receiverId }), if don't show me to disliked profiles
+          setView({ userId: receiverId, receiverId: senderId }),
+        ]);
       } catch (error) {
         console.log(error);
       }
