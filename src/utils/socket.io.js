@@ -456,6 +456,40 @@ export const like = ({ sent, senderId, receiverId }) => {
   });
 };
 
+export const setView = ({ userId, receiverId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          viewed: {
+            $not: {
+              $elemMatch: {
+                userId: mongoose.Types.ObjectId(receiverId),
+              },
+            },
+          },
+        },
+        {
+          $push: {
+            viewed: {
+              userId: receiverId,
+              createdAt: new Date(),
+            },
+          },
+        },
+        (err, res) => {
+          console.log(err);
+          if (err) return reject(err);
+          resolve();
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      reject(error);
+    }
+  });
+
 export const getLikes = ({ userId }) =>
   new Promise((resolve, reject) => {
     try {

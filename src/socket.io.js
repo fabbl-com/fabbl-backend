@@ -11,6 +11,7 @@ import {
   getMatches,
   checkLike,
   match,
+  setView,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
@@ -228,6 +229,14 @@ const connectSocket = (io) => {
           users: [],
           message: error.message || "Cannot fetch users",
         });
+      }
+    });
+
+    socket.on("view", async ({ senderId, receiverId }) => {
+      try {
+        const res = await setView({ userId: senderId, receiverId });
+      } catch (error) {
+        console.log(error);
       }
     });
 
