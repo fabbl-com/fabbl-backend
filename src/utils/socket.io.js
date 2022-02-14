@@ -41,6 +41,66 @@ export const getUserInfo = ({ userId, socketID }) => {
   });
 };
 
+export const getReceiverInfo = ({ senderId, receiverId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.aggregate([
+        { $match: { _id: mongoose.Types.ObjectId(receiverId) } },
+        {
+          $project: {
+            avatar: 1,
+            online: 1,
+            lastLogin: 1,
+            displayName: 1,
+            matches: 1,
+            friends: 1,
+          },
+        },
+        {
+          $unwind: {
+            path: "$friends",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            avatar: 1,
+            online: 1,
+            displayName: 1,
+            lastLogin: 1,
+            matches: 1,
+            isFriends: {
+              $in: ["$friends.userId", [mongoose.Types.ObjectId(senderId)]],
+            },
+          },
+        },
+        {
+          $unwind: {
+            path: "$matches",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        { $match: { "matches.userId": mongoose.Types.ObjectId(senderId) } },
+        {
+          $project: {
+            avatar: 1,
+            matchAt: "$matches.createdAt",
+            displayName: 1,
+            lastLogin: 1,
+            isFriends: 1,
+            online: 1,
+          },
+        },
+      ]).exec((err, res) => {
+        if (err) return reject(err);
+        resolve(res[0]);
+      });
+    } catch (error) {
+      console.log(error);
+      reject(error);
+    }
+  });
+
 export const getChatList = (userId) =>
   new Promise((resolve, reject) => {
     try {
@@ -193,7 +253,7 @@ export const addSocketID = async ({ userId, socketID }) =>
     try {
       User.findByIdAndUpdate(userId, { socketID }, (err, user) => {
         if (err) reject(err);
-        resolve();
+        resolve(true);
       });
     } catch (error) {
       reject(error);
@@ -203,17 +263,19 @@ export const addSocketID = async ({ userId, socketID }) =>
 export const getMessages = (sender, receiver) =>
   new Promise((resolve, reject) => {
     try {
-      Message.findOne(
+      Message.aggregate([
         {
-          message_id: {
-            $in: [`${sender}_${receiver}`, `${receiver}_${sender}`],
+          $match: {
+            message_id: {
+              $in: [`${sender}_${receiver}`, `${receiver}_${sender}`],
+            },
           },
         },
-        (err, messages) => {
-          if (err) return reject(err);
-          resolve(messages);
-        }
-      );
+        { $project: { _id: 0, messages: 1 } },
+      ]).exec((err, res) => {
+        if (err) return reject(err);
+        resolve(res[0].messages);
+      });
     } catch (error) {
       reject(error);
     }
@@ -565,3 +627,24 @@ export const match = ({ senderId, receiverId }) =>
       reject(error);
     }
   });
+
+export const changeUserOnline = ({ userId, changeToOnline }) => {
+  let obj;
+  if (changeToOnline) obj = { online: true };
+  else obj = { online: false };
+  return new Promise((resolve, reject) => {
+    try {
+      User.findByIdAndUpdate(
+        userId,
+        { $set: obj },
+        { new: true },
+        (err, user) => {
+          if (err) reject(err);
+          resolve(user.id);
+        }
+      );
+    } catch (err) {
+      reject(err);
+    }
+  });
+};

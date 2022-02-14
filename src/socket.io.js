@@ -12,17 +12,28 @@ import {
   checkLike,
   match,
   setView,
+  getReceiverInfo,
+  changeUserOnline,
 } from "./utils/socket.io.js";
 
+let userID;
 const connectSocket = (io) => {
   io.use(async (socket, next) => {
     const { userId } = await socket.request._query;
+    userID = userId;
     console.log(userId);
     try {
-      await addSocketID({
-        userId: socket.request._query.userId,
-        socketID: socket.id,
-      });
+      const [res1, res2] = await Promise.all([
+        changeUserOnline({
+          userId,
+          changeToOnline: true,
+        }),
+        addSocketID({
+          userId: socket.request._query.userId,
+          socketID: socket.id,
+        }),
+      ]);
+      console.log(res1, res2, "resolved");
       next();
     } catch (error) {
       console.error(error);
@@ -51,7 +62,10 @@ const connectSocket = (io) => {
       } else {
         try {
           const [receiverSocketID, _] = await Promise.all([
-            getUserInfo({ userId: message.receiver, socketID: true }),
+            getUserInfo({
+              userId: message.receiver,
+              socketID: true,
+            }),
             insertMessage(message),
           ]);
           console.log(receiverSocketID);
@@ -91,10 +105,18 @@ const connectSocket = (io) => {
     socket.on("get-user-messages", async ({ sender, receiver }) => {
       console.log(sender, receiver);
       try {
-        const messages = await getMessages(sender, receiver);
+        const [messages, user] = await Promise.all([
+          getMessages(sender, receiver),
+          getReceiverInfo({
+            senderId: sender,
+            receiverId: receiver,
+          }),
+        ]);
+        // console.log(messages, "user");
         io.to(socket.id).emit("get-user-messages-response", {
           success: true,
           messages,
+          receiver: user,
         });
         // console.log(messages);
       } catch (error) {
@@ -130,7 +152,10 @@ const connectSocket = (io) => {
 
     socket.on("get-random-users", async ({ userId, page, limit, choices }) => {
       try {
-        const user = await getUserInfo({ userId, socketID: false });
+        const user = await getUserInfo({
+          userId,
+          socketID: false,
+        });
         // console.log(user.viewed);
         const baseUser = {
           viewed: user.viewed,
@@ -219,8 +244,12 @@ const connectSocket = (io) => {
       }
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("disconnected");
+      const userId = await changeUserOnline({
+        userId: userID,
+        changeToOnline: false,
+      });
       socket.broadcast.emit("chat-list-response", {
         succes: true,
         isDisconnected: true,

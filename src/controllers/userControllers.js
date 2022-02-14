@@ -187,6 +187,19 @@ export const updatePassword = async (req, res, next) => {
 };
 
 export const checkAuth = (req, res, next) => {
-  if (req.session.user) return res.status(200).json({ success: true });
+  if (req.session.user) {
+    console.log(req.session.user);
+    const userId = req.session.user.id;
+    User.findByIdAndUpdate(
+      userId,
+      {
+        $set: { lastLogin: new Date() },
+      },
+      (err, res) => {
+        if (err) return next(err);
+      }
+    );
+    return res.status(200).json({ success: true });
+  }
   return next(new ErrorMessage("Access denied", 401));
 };

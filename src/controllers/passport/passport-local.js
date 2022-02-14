@@ -1,7 +1,7 @@
 import passportLocal from "passport-local";
 import gravatar from "gravatar";
 import User from "../../models/userModel.js";
-import makeUserOnline from "../../utils/makeUserOnline.js";
+import { changeUserOnline } from "../../utils/socket.io.js";
 
 const LocalStrategy = passportLocal.Strategy;
 
@@ -63,7 +63,10 @@ export const localLoginStrategy = new LocalStrategy(
             message: "Email or password is incorrect",
           });
         try {
-          const userId = await makeUserOnline(user.id);
+          const userId = await changeUserOnline({
+            userId: user.id,
+            changeToOnline: true,
+          });
           const sessUser = { id: user.id, email: user.email };
           req.session.user = sessUser;
           console.log(userId);
