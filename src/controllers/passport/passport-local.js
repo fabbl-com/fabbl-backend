@@ -64,6 +64,8 @@ export const localLoginStrategy = new LocalStrategy(
           });
         try {
           const userId = await makeUserOnline(user.id);
+          const sessUser = { id: user.id, email: user.email };
+          req.session.user = sessUser;
           console.log(userId);
           next(null, userId);
         } catch (err) {

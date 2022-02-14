@@ -17,7 +17,11 @@ const facebookStrategy = new FacebookStrategy(
   (req, accessToken, refreshToken, profile, next) => {
     User.findOne({ facebook: profile.id }, (err, user) => {
       if (err) return next(new ErrorMessage(err, 400));
-      if (user) return next(null, user);
+      if (user) {
+        const sessUser = { id: user.id, email: user.email };
+        req.session.user = sessUser;
+        return next(null, user);
+      }
 
       User.findOneAndUpdate(
         { email: profile._json.email },
@@ -25,6 +29,8 @@ const facebookStrategy = new FacebookStrategy(
         { new: true, upsert: true },
         (err, user) => {
           if (err) return next(err);
+          const sessUser = { id: user.id, email: user.email };
+          req.session.user = sessUser;
           return next(null, user);
         }
       );

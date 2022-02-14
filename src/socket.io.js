@@ -8,6 +8,10 @@ import {
   getRandomUsers,
   like,
   getLikes,
+  getMatches,
+  checkLike,
+  match,
+  setView,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
@@ -27,7 +31,6 @@ const connectSocket = (io) => {
   });
   io.on("connection", (socket) => {
     console.log("connected");
-
     socket.on("send-message", async (message) => {
       console.log(message);
       if (!message.text) {
@@ -103,15 +106,20 @@ const connectSocket = (io) => {
     });
 
     socket.on("chat-list", async (userId) => {
-      console.log(userId);
+      // console.log(userId);
       try {
-        const messages = await getChatList(userId);
-        console.log(messages);
+        const [onlyMatches, matchedAndMessaged] = await Promise.all([
+          getMatches(userId),
+          getChatList(userId),
+        ]);
+        // console.log(messages);
         io.to(socket.id).emit("chat-list-response", {
           success: true,
-          messages,
+          // remove duplicates
+          messages: [...onlyMatches, ...matchedAndMessaged],
         });
       } catch (error) {
+        console.log(error);
         io.to(socket.id).emit("chat-list-response", {
           success: false,
           message: null,
@@ -123,12 +131,12 @@ const connectSocket = (io) => {
     socket.on("get-random-users", async ({ userId, page, limit, choices }) => {
       try {
         const user = await getUserInfo({ userId, socketID: false });
-        console.log(user.viewed);
+        // console.log(user.viewed);
         const baseUser = {
           viewed: user.viewed,
           dob: new Date(user.dob.value).getTime(),
           hobby: user.hobby.value,
-          gender: user.gender.value,
+          gender: user.gender.value === "male" ? "female" : "male",
         };
         const users = await getRandomUsers(
           userId,
@@ -137,7 +145,6 @@ const connectSocket = (io) => {
           choices,
           baseUser
         );
-        console.log(users[0].data[0]);
         io.to(socket.id).emit("get-random-users-response", {
           success: true,
           users: users[0].data,
@@ -153,18 +160,44 @@ const connectSocket = (io) => {
 
     socket.on("like", async ({ senderId, receiverId }) => {
       try {
-        const [result1, result2, socketID, likes] = await Promise.all([
-          like({ sent: true, senderId, receiverId }),
-          like({ sent: false, senderId, receiverId }),
-          getUserInfo({ userId: receiverId, socketID: true }),
-          getLikes({ userId: receiverId }),
+        const socketID = await getUserInfo({
+          userId: receiverId,
+          socketID: true,
+        });
+
+        const [user1ID, user2ID] = await Promise.all([
+          checkLike({ sent: true, senderId, receiverId }),
+          checkLike({ sent: false, senderId, receiverId }),
         ]);
 
-        console.log(result1, result2, socketID, likes.interaction.received);
-        io.to(socketID).emit("like-response", {
-          success: true,
-          likes: likes.interaction.received,
-        });
+        console.log(user1ID, user2ID, "checklike");
+
+        if (user1ID && user2ID) {
+          const [result1, result2] = await Promise.all([
+            match({ senderId: user1ID, receiverId: user2ID }),
+            match({ senderId: user2ID, receiverId: user1ID }),
+          ]);
+
+          console.log(result1, result2);
+
+          io.to(socketID).emit("like-response", {
+            success: true,
+            isMatched: true,
+          });
+        } else {
+          const [result1, result2, likes] = await Promise.all([
+            like({ sent: true, senderId, receiverId }),
+            like({ sent: false, senderId, receiverId }),
+            getLikes({ userId: receiverId }),
+          ]);
+
+          // console.log(result1, result2, socketID, likes.interaction.received);
+          io.to(socketID).emit("like-response", {
+            success: true,
+            likes: likes.interaction.received,
+            isMatched: false,
+          });
+        }
       } catch (error) {
         console.log(error);
         io.to(socket.id).emit("like-response", {
@@ -172,6 +205,17 @@ const connectSocket = (io) => {
           users: [],
           message: error.message || "Cannot fetch users",
         });
+      }
+    });
+
+    socket.on("view", async ({ senderId, receiverId }) => {
+      try {
+        const res = await Promise.all([
+          // setView({ userId: senderId, receiverId }), if don't show me to disliked profiles
+          setView({ userId: receiverId, receiverId: senderId }),
+        ]);
+      } catch (error) {
+        console.log(error);
       }
     });
 

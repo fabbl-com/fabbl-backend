@@ -17,7 +17,11 @@ const googleStrategy = new GoogleStrategy(
     console.log(accessToken, refreshToken, profile);
     User.findOne({ google: profile.id }, (err, user) => {
       if (err) return next(err);
-      if (user) return next(null, user.id);
+      if (user) {
+        const sessUser = { id: user.id, email: user.email };
+        req.session.user = sessUser;
+        return next(null, user.id);
+      }
       // console.log(user.id);
 
       const avatar = gravatar.url(
@@ -38,6 +42,8 @@ const googleStrategy = new GoogleStrategy(
         { new: true, upsert: true },
         (err, user) => {
           if (err) return next(err);
+          const sessUser = { id: user.id, email: user.email };
+          req.session.user = sessUser;
           return next(null, user.id);
         }
       );
