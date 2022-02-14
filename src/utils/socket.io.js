@@ -131,11 +131,11 @@ export const getChatList = (userId) =>
           },
         },
         { $unwind: "$msgCopy" },
-        {
-          $match: {
-            "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
-          },
-        },
+        // {
+        //   $match: {
+        //     "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
+        //   },
+        // },
         {
           $group: {
             _id: "$_id",
@@ -143,7 +143,17 @@ export const getChatList = (userId) =>
             receiver: { $first: "$receiver" },
             message: { $last: "$message" },
             createdAt: { $last: "$createdAt" },
-            unread: { $sum: 1 },
+            unread: {
+              $sum: {
+                $cond: [
+                  {
+                    $ne: ["$msgCopy.sender", mongoose.Types.ObjectId(userId)],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
           },
         },
         {
@@ -157,17 +167,19 @@ export const getChatList = (userId) =>
         { $unwind: "$profile" },
         {
           $project: {
+            _id: 0,
             userId: "$profile._id",
-            message_id: 1,
-            receiver: 1,
+            // message_id: 1,
+            // receiver: 1,
             message: 1,
             createdAt: 1,
             displayName: "$profile.displayName",
             unread: 1,
             online: "$profile.online",
-            uuid: "$profile.uuid",
+            // uuid: "$profile.uuid",
             avatar: "$profile.avatar",
-            friends: "$profile.friends",
+            // friends: "$profile.friends",
+            // unwind first
             isFriends: {
               $in: [
                 "$profile.friends.userId",
@@ -274,7 +286,7 @@ export const getMessages = (sender, receiver) =>
         { $project: { _id: 0, messages: 1 } },
       ]).exec((err, res) => {
         if (err) return reject(err);
-        resolve(res[0].messages);
+        resolve(res?.[0]?.messages);
       });
     } catch (error) {
       reject(error);

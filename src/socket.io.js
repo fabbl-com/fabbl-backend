@@ -16,11 +16,9 @@ import {
   changeUserOnline,
 } from "./utils/socket.io.js";
 
-let userID;
 const connectSocket = (io) => {
   io.use(async (socket, next) => {
     const { userId } = await socket.request._query;
-    userID = userId;
     console.log(userId);
     try {
       const [res1, res2] = await Promise.all([
@@ -135,10 +133,19 @@ const connectSocket = (io) => {
           getChatList(userId),
         ]);
         // console.log(messages);
+        const arr = [...matchedAndMessaged, ...onlyMatches];
+        const messages = arr.filter(
+          (value, index, self) =>
+            index ===
+            self.findIndex(
+              (t) => t.userId.toString() === value.userId.toString()
+            )
+        );
+        console.log(arr);
         io.to(socket.id).emit("chat-list-response", {
           success: true,
           // remove duplicates
-          messages: [...onlyMatches, ...matchedAndMessaged],
+          messages,
         });
       } catch (error) {
         console.log(error);
@@ -245,11 +252,11 @@ const connectSocket = (io) => {
     });
 
     socket.on("disconnect", async () => {
-      console.log("disconnected");
       const userId = await changeUserOnline({
-        userId: userID,
+        userId: socket.request._query.userId,
         changeToOnline: false,
       });
+      console.log(userId, "disconnected");
       socket.broadcast.emit("chat-list-response", {
         succes: true,
         isDisconnected: true,
