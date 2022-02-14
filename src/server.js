@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import http from "http";
+import fileupload from "express-fileupload";
 import { Server } from "socket.io";
 import handleError from "./middlewares/error.js";
 import configureExpress from "./config/appConfig.js";
@@ -20,6 +21,9 @@ const io = new Server(server, {
 configureExpress(app);
 connectSocket(io);
 
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(fileupload({ useTempFiles: true }));
 // Routes
 app.use("/", router);
 app.use(handleError);

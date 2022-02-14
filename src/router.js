@@ -23,6 +23,7 @@ import {
   removeFriend,
   removeBlock,
   addViewed,
+  imageUpload,
 } from "./controllers/profileControllers.js";
 
 const router = express.Router();
@@ -100,6 +101,6 @@ router.post("/user/add/block/:id", blockFriend);
 router.post("/user/remove/friend/:id", removeFriend);
 router.post("/user/remove/block/:id", removeBlock);
 
-// router.post("/test/add-many", insertUser);
+router.post("/user/upload/image/:id", imageUpload);
 
 export default router;
