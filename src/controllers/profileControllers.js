@@ -1,6 +1,7 @@
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
-
+import cloudinary from "cloudinary";
+import keys from "../config/keys.js";
 // @route     GET  /user/profile/:id
 // desc         get current user profile
 // @access  private
@@ -43,7 +44,6 @@ export const updateSettings = async (req, res) => {
 
   try {
     const profileData = await User.findById(userId);
-
     profileData.displayName.status = username;
     profileData.gender.status = genderPref;
     profileData.headline.status = bio;
@@ -86,16 +86,15 @@ export const updatePersonalData = async (req, res) => {
 
   try {
     const profileData = await User.findById(userId);
-
     profileData.displayName.value = usernameData;
     profileData.gender.value = genderData;
     profileData.headline.value = bioData;
     profileData.dob.value = ageData;
 
-    const locationArray = locationData.split(",");
+    // const locationArray = locationData.split(",");
 
-    profileData.city.value = locationArray[0];
-    profileData.country.value = locationArray[1];
+    profileData.city.value = locationData;
+    profileData.country.value = locationData;
 
     profileData.relationshipStatus.value = relationshipStatusData;
     profileData.hobby.value = hobbiesData;
@@ -284,5 +283,34 @@ export const removeBlock = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "unable to unblock" });
+  }
+};
+
+// @route     post  /user/upload/image/:id
+// desc         upload user image
+// @access  private
+
+export const imageUpload = async (req, res) => {
+  cloudinary.config({
+    cloud_name: keys.cloudinary.cloud_name,
+    api_key: keys.cloudinary.api_key,
+    api_secret: keys.cloudinary.api_secret,
+  });
+  const userId = req.params.id;
+  const imageFile = req.files.data;
+  console.log(req.files.data);
+  try {
+    const uploadResponse = await cloudinary.v2.uploader.upload(
+      imageFile.tempFilePath,
+      {
+        public_id: userId,
+        folder: "fabbl",
+      }
+    );
+    console.log(uploadResponse);
+    return res.status(200).json(uploadResponse.secure_url);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "unable to upload" });
   }
 };
