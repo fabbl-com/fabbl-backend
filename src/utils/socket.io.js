@@ -16,6 +16,7 @@ export const getUserInfo = ({ userId, socketID }) => {
       dob: true,
       viewed: true,
       gender: true,
+      relationshipStatus: true,
     };
   }
   return new Promise((resolve, reject) => {
@@ -307,9 +308,9 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
       "interaction.received.userId": {
         $not: { $in: [mongoose.Types.ObjectId(userId)] },
       },
-      lastLogin: {
-        $lte: new Date(new Date() - (choices.day || 1) * 24 * 60 * 60 * 1000),
-      },
+      // lastLogin: {
+      //   $lte: new Date(new Date() - (choices.day || 1) * 24 * 60 * 60 * 1000),
+      // },
     };
 
     const stage2_1 = {
@@ -333,7 +334,11 @@ export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
         ],
       },
       statusScore: {
-        $cond: [{ $eq: ["$relationshipStatus.value", "married"] }, 0.5, 0],
+        $cond: [
+          { $eq: ["$relationshipStatus.value", baseUser.relationshipStatus] },
+          0.5,
+          0,
+        ],
       },
       gender: "$gender.value",
       isProfileVerified: 1,

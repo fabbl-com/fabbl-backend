@@ -70,7 +70,7 @@ const userSchema = mongoose.Schema(
       status: { type: String, default: 2 },
     },
     gender: {
-      value: { type: String, default: "" },
+      value: Number, // ["male", "female", "others"]
       status: { type: Number, default: 2 },
     },
     isProfileVerified: { type: Boolean, default: false },
@@ -84,13 +84,9 @@ const userSchema = mongoose.Schema(
     },
     relationshipStatus: {
       status: { type: Number, default: 2 },
-      value: { type: String, default: "" }, // ["single", "commited", "married", "heart-broken"];
+      value: { type: Number, default: 0 }, // ["single", "commited", "married", "heart-broken"];
     },
-    city: {
-      value: { type: String, default: "" },
-      status: { type: Number, default: 2 },
-    },
-    country: {
+    location: {
       value: { type: String, default: "" },
       status: { type: Number, default: 2 },
     },

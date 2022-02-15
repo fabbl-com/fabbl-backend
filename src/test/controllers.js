@@ -175,8 +175,6 @@ const getVal = () => {
     "Water sports",
   ];
 
-  const relationshipStatus = ["single", "commited", "married", "heart-broken"];
-
   const getHobbies = () => {
     const arr = [];
     for (let i = 0; i < 5; i++) {
@@ -186,7 +184,6 @@ const getVal = () => {
     return arr;
   };
 
-  const gender = ["male", "female"];
   const { email } = casual;
   const avatar = gravatar.url(email, { s: "100", r: "x", d: "retro" }, true);
   const users = {
@@ -209,27 +206,20 @@ const getVal = () => {
       status: 2,
       value: getHobbies(),
     },
-    city: {
+    location: {
       value: casual.city,
       status: 3,
     },
     gender: {
-      value: gender[Math.floor(Math.random() * 2)],
+      value: Math.floor(Math.random() * 2),
       status: 3,
     },
     avatar: {
       value: avatar,
       status: 3,
     },
-    country: {
-      value: casual.country,
-      status: 3,
-    },
     relationshipStatus: {
-      value:
-        relationshipStatus[
-          Math.floor(Math.random() * relationshipStatus.length)
-        ],
+      value: Math.floor(Math.random() * 4),
       status: 3,
     },
     lastLogin: new Date(

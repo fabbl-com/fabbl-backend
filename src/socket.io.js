@@ -163,12 +163,13 @@ const connectSocket = (io) => {
           userId,
           socketID: false,
         });
-        // console.log(user.viewed);
+        console.log(user, "user");
         const baseUser = {
           viewed: user.viewed,
           dob: new Date(user.dob.value).getTime(),
           hobby: user.hobby.value,
-          gender: user.gender.value === "male" ? "female" : "male",
+          gender: user.gender.value === 0 ? 1 : 0,
+          relationshipStatus: user.relationshipStatus.value,
         };
         const users = await getRandomUsers(
           userId,
@@ -182,6 +183,7 @@ const connectSocket = (io) => {
           users: users[0].data,
         });
       } catch (error) {
+        console.log(error);
         io.to(socket.id).emit("get-random-users-response", {
           success: false,
           users: [],

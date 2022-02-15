@@ -17,13 +17,6 @@ import {
   currentUserProfile,
   updateSettings,
   updatePersonalData,
-  addFriend,
-  blockFriend,
-  // sentRequest,
-  // receivedRequest,
-  removeFriend,
-  removeBlock,
-  addViewed,
   imageUpload,
 } from "./controllers/profileControllers.js";
 
@@ -68,11 +61,8 @@ router.get(
 
 router.get("/auth/check", checkAuth);
 
-// router.post("/auth/verify-email");
-// router.post("/auth/forget-password");
-// router.post("/auth/reset-password");
-
 // only for testing
+// router.post("/add-users", insertUser);
 router.post("/user/add-message", async (req, res, next) => {
   try {
     const message = {
@@ -89,20 +79,13 @@ router.post("/user/add-message", async (req, res, next) => {
 });
 
 router.post("/user/send-reset-password-email", sendResetPasswordMail);
-router.get("/user/send-verify-email/:id", sendVerificationMail);
-router.post("/user/send-update-email/:id", sendUpdateEmail);
-router.get("/user/verify-email/:token", verifyEmail);
-router.get("/user/profile/:id", currentUserProfile);
-router.post("/user/profile/:id", updateSettings);
-router.post("/user/profile/Personal/:id", updatePersonalData);
-router.post("/user/update-password/:id", updatePassword);
-router.post("/user/add/friend/:id", addFriend);
-router.post("/user/add/view/:id", addViewed);
-router.post("/user/add/block/:id", blockFriend);
-// router.post("/user/add/sent-request/:id", sentRequest);
-// router.post("/user/add/received-Request/:id", receivedRequest);
-router.post("/user/remove/friend/:id", removeFriend);
-router.post("/user/remove/block/:id", removeBlock);
+router.get("/user/send-verify-email/:id", isAuth, sendVerificationMail);
+router.post("/user/send-update-email/:id", isAuth, sendUpdateEmail);
+router.get("/user/verify-email/:token", isAuth, verifyEmail);
+router.get("/user/profile/:id", isAuth, currentUserProfile);
+router.post("/user/profile/:id", isAuth, updateSettings);
+router.post("/user/profile/Personal/:id", isAuth, updatePersonalData);
+router.post("/user/update-password/:id", isAuth, updatePassword);
 
 router.post("/user/upload/image/:id", imageUpload);
 
