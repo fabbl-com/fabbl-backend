@@ -66,30 +66,30 @@ router.get("/auth/check", checkAuth);
 
 // only for testing
 // router.post("/add-users", insertUser);
-router.post("/read", async (req, res) => {
-  try {
-    const result = await Message.updateMany(
-      {
-        _id: mongoose.Types.ObjectId("620d6d560fe08325a32c8b08"),
-      },
-      { $set: { "messages.$[elem].isRead": true } },
-      {
-        arrayFilters: [
-          {
-            "elem.createdAt": {
-              $lte: new Date("2022-02-17T09:51:14.924+00:00"),
-            },
-          },
-        ],
-        upsert: true,
-      }
-      // { new: true, upsert: true }
-    );
-    res.send(result);
-  } catch (err) {
-    console.log(err);
-  }
-});
+// router.post("/read", async (req, res) => {
+//   try {
+//     const result = await Message.updateMany(
+//       {
+//         _id: mongoose.Types.ObjectId("620d6d560fe08325a32c8b08"),
+//       },
+//       { $set: { "messages.$[elem].isRead": true } },
+//       {
+//         arrayFilters: [
+//           {
+//             "elem.createdAt": {
+//               $lte: new Date("2022-02-17T09:51:14.924+00:00"),
+//             },
+//           },
+//         ],
+//         upsert: true,
+//       }
+//       // { new: true, upsert: true }
+//     );
+//     res.send(result);
+//   } catch (err) {
+//     console.log(err);
+//   }
+// });
 // router.post("/user/add-message", async (req, res, next) => {
 //   try {
 //     const message = {

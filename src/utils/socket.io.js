@@ -148,7 +148,15 @@ export const getChatList = (userId) =>
               $sum: {
                 $cond: [
                   {
-                    $ne: ["$msgCopy.sender", mongoose.Types.ObjectId(userId)],
+                    $and: [
+                      {
+                        $ne: [
+                          "$msgCopy.sender",
+                          mongoose.Types.ObjectId(userId),
+                        ],
+                      },
+                      { $eq: ["$msgCopy.isRead", false] },
+                    ],
                   },
                   1,
                   0,
