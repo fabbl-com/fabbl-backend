@@ -31,7 +31,7 @@ export const getUserInfo = ({ userId, socketID }) => {
       ]).exec((err, res) => {
         if (err) return reject(err);
         if (socketID) {
-          resolve(res[0].socketID);
+          resolve(res[0]?.socketID);
         } else {
           resolve(res[0]);
         }
@@ -284,10 +284,10 @@ export const getMessages = (sender, receiver) =>
             },
           },
         },
-        { $project: { _id: 0, messages: 1 } },
+        { $project: { messages: 1 } },
       ]).exec((err, res) => {
         if (err) return reject(err);
-        resolve(res?.[0]?.messages);
+        resolve(res?.[0]);
       });
     } catch (error) {
       reject(error);
@@ -665,3 +665,26 @@ export const changeUserOnline = ({ userId, changeToOnline }) => {
     }
   });
 };
+
+export const makeMessageSeen = ({ _id, sender, createdAt }) =>
+  new Promise((resolve, reject) => {
+    try {
+      Message.updateMany(
+        {
+          _id: mongoose.Types.ObjectId(_id),
+          "messages.sender": mongoose.Types.ObjectId(sender),
+        },
+        { $set: { "messages.$[elem].isRead": true } },
+        {
+          arrayFilters: [{ "elem.createdAt": { $lte: new Date(createdAt) } }],
+          upsert: true,
+        },
+        (err, _) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (err) {
+      reject(err);
+    }
+  });

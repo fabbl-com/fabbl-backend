@@ -14,6 +14,7 @@ import {
   setView,
   getReceiverInfo,
   changeUserOnline,
+  makeMessageSeen,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
@@ -31,7 +32,7 @@ const connectSocket = (io) => {
           socketID: socket.id,
         }),
       ]);
-      console.log(res1, res2, "resolved");
+      // console.log(res1, res2, "resolved");
       next();
     } catch (error) {
       console.error(error);
@@ -41,7 +42,7 @@ const connectSocket = (io) => {
   io.on("connection", (socket) => {
     console.log("connected");
     socket.on("send-message", async (message) => {
-      console.log(message);
+      // console.log(message);
       if (!message.text) {
         io.to(socket.id).emit("send-message-response", {
           success: false,
@@ -66,7 +67,7 @@ const connectSocket = (io) => {
             }),
             insertMessage(message),
           ]);
-          console.log(receiverSocketID);
+          // console.log(receiverSocketID);
           io.to(receiverSocketID).emit("send-message-response", message);
         } catch (error) {
           console.log(error);
@@ -141,7 +142,6 @@ const connectSocket = (io) => {
               (t) => t.userId.toString() === value.userId.toString()
             )
         );
-        console.log(arr);
         io.to(socket.id).emit("chat-list-response", {
           success: true,
           // remove duplicates
@@ -163,7 +163,7 @@ const connectSocket = (io) => {
           userId,
           socketID: false,
         });
-        console.log(user, "user");
+        // console.log(user, "user");
         const baseUser = {
           viewed: user.viewed,
           dob: new Date(user.dob.value).getTime(),
@@ -204,7 +204,7 @@ const connectSocket = (io) => {
           checkLike({ sent: false, senderId, receiverId }),
         ]);
 
-        console.log(user1ID, user2ID, "checklike");
+        // console.log(user1ID, user2ID, "checklike");
 
         if (user1ID && user2ID) {
           const [result1, result2] = await Promise.all([
@@ -212,7 +212,7 @@ const connectSocket = (io) => {
             match({ senderId: user2ID, receiverId: user1ID }),
           ]);
 
-          console.log(result1, result2);
+          // console.log(result1, result2);
 
           io.to(socketID).emit("like-response", {
             success: true,
@@ -253,6 +253,30 @@ const connectSocket = (io) => {
       }
     });
 
+    socket.on("read", async ({ _id, createdAt, sender }) => {
+      try {
+        console.log(_id, createdAt, sender, "read");
+        const [isRead, socketId] = await Promise.all([
+          makeMessageSeen({ _id, sender, createdAt }),
+          getUserInfo({
+            userId: sender,
+            socketID: true,
+          }),
+        ]);
+
+        console.log(isRead, socketId);
+
+        if (isRead)
+          io.to(socketId).emit("read-response", {
+            success: true,
+            sender,
+            createdAt,
+          });
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
     socket.on("disconnect", async () => {
       const userId = await changeUserOnline({
         userId: socket.request._query.userId,
@@ -260,7 +284,7 @@ const connectSocket = (io) => {
       });
       console.log(userId, "disconnected");
       socket.broadcast.emit("chat-list-response", {
-        succes: true,
+        success: true,
         isDisconnected: true,
         userId: socket.request._query.userId,
       });

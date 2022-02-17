@@ -2,7 +2,9 @@
 import casual from "casual";
 import { v4 as uuidv4 } from "uuid";
 import gravatar from "gravatar";
+import mongoose from "mongoose";
 import User from "../models/userModel.js";
+import Message from "../models/messageModel.js";
 
 const getVal = () => {
   const interests = [
@@ -229,20 +231,34 @@ const getVal = () => {
   return users;
 };
 
-export const insertUser = async (req, res, next) => {
-  const arr = [];
-  for (let i = 0; i < 50; i++) {
-    arr.push(getVal());
-  }
+// export const insertUser = async (req, res, next) => {
+//   const arr = [];
+//   for (let i = 0; i < 50; i++) {
+//     arr.push(getVal());
+//   }
+//   try {
+//     const result = await User.insertMany(arr);
+//     res.send(result);
+//   } catch (error) {
+//     console.log(error);
+//   }
+//   return arr;
+// };
+
+export const makeMessageSeen = async (req, res, next) => {
   try {
-    const result = await User.insertMany(arr);
+    const result = await Message.updateOne(
+      {
+        _id: mongoose.Types.ObjectId("620ba2766094eef762070c9a"),
+        "messages._id": mongoose.Types.ObjectId("620cf5b1c5190fda5aadb9a8"),
+      },
+      { $set: { "messages.$.isRead": true } },
+      { new: true, upsert: true }
+    );
     res.send(result);
-  } catch (error) {
-    console.log(error);
+  } catch (err) {
+    console.log(err);
   }
-  return arr;
 };
 
-// const
-
-console.log(insertUser());
+// console.log(insertUser());
