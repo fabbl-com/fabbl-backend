@@ -33,6 +33,11 @@ const connectSocket = (io) => {
         }),
       ]);
       // console.log(res1, res2, "resolved");
+      socket.broadcast.emit("connection-response", {
+        connected: true,
+        userId,
+        lastLogin: new Date(),
+      });
       next();
     } catch (error) {
       console.error(error);
@@ -283,10 +288,10 @@ const connectSocket = (io) => {
         changeToOnline: false,
       });
       console.log(userId, "disconnected");
-      socket.broadcast.emit("chat-list-response", {
-        success: true,
-        isDisconnected: true,
-        userId: socket.request._query.userId,
+      socket.broadcast.emit("connection-response", {
+        connected: false,
+        userId,
+        lastLogin: new Date(),
       });
     });
   });
