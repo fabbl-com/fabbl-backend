@@ -656,7 +656,7 @@ export const match = ({ senderId, receiverId }) =>
 export const changeUserOnline = ({ userId, changeToOnline }) => {
   let obj;
   if (changeToOnline) obj = { online: true };
-  else obj = { online: false };
+  else obj = { online: false, lastLogin: new Date() };
   return new Promise((resolve, reject) => {
     try {
       User.findByIdAndUpdate(
@@ -696,3 +696,39 @@ export const makeMessageSeen = ({ _id, sender, createdAt }) =>
       reject(err);
     }
   });
+
+export const addToArray = ({ userId, receiverId, type }) => {
+  let array;
+  if (type === "FRIENDS") array = "friends";
+  else if (type === "BLOCK") array = "blocked";
+
+  const query = { _id: mongoose.Types.ObjectId(userId) };
+  const operation = {};
+  query[array] = {
+    $not: {
+      $elemMatch: {
+        userId: mongoose.Types.ObjectId(receiverId),
+      },
+    },
+  };
+  operation[array] = {
+    userId: receiverId,
+    createdAt: new Date(),
+  };
+  return new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        query,
+        {
+          $push: operation,
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+};

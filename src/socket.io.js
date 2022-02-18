@@ -15,6 +15,7 @@ import {
   getReceiverInfo,
   changeUserOnline,
   makeMessageSeen,
+  addToArray,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
@@ -279,6 +280,43 @@ const connectSocket = (io) => {
           });
       } catch (error) {
         console.log(error);
+      }
+    });
+
+    socket.on("add-friends", async ({ sender, receiver }) => {
+      console.log(sender, receiver, "array");
+      try {
+        const isAdded = await addToArray({
+          userId: sender,
+          receiverId: receiver,
+          type: "FRIENDS",
+        });
+        console.log(isAdded, "array");
+        if (isAdded)
+          io.to(socket.id).emit("add-friends-response", { isFriends: isAdded });
+      } catch (error) {
+        io.to(socket.id).emit("add-friends-response", { isFriends: false });
+      }
+    });
+
+    socket.on("block", async ({ sender, receiver }) => {
+      try {
+        const isBlocked = await addToArray({
+          userId: sender,
+          receiverId: receiver,
+          type: "BLOCK",
+        });
+
+        if (isBlocked)
+          io.to(socket.id).emit("block-response", {
+            isBlocked,
+            blockedAt: new Date(),
+          });
+      } catch (error) {
+        io.to(socket.id).emit("block-response", {
+          isBlocked: false,
+          blockedAt: new Date(),
+        });
       }
     });
 
