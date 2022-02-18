@@ -11,7 +11,6 @@ import {
   getMatches,
   checkLike,
   match,
-  setView,
   getReceiverInfo,
   changeUserOnline,
   makeMessageSeen,
@@ -252,7 +251,11 @@ const connectSocket = (io) => {
       try {
         const res = await Promise.all([
           // setView({ userId: senderId, receiverId }), if don't show me to disliked profiles
-          setView({ userId: receiverId, receiverId: senderId }),
+          addToArray({
+            userId: receiverId,
+            receiverId: senderId,
+            type: "VIEW",
+          }),
         ]);
       } catch (error) {
         console.log(error);

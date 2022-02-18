@@ -303,12 +303,10 @@ export const getMessages = (sender, receiver) =>
   });
 
 export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
-  // console.log(userId, page, limit, choices, baseUser);
   const skip = ((page || 1) - 1) * limit;
   return new Promise((resolve, reject) => {
     const stage1 = {
       _id: { $not: { $in: baseUser.viewed } },
-      // function to find opposite gender
       "gender.value": choices.gender || baseUser.gender,
       "blocked.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
       "viewed.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
@@ -544,40 +542,6 @@ export const like = ({ sent, senderId, receiverId }) => {
   });
 };
 
-export const setView = ({ userId, receiverId }) =>
-  new Promise((resolve, reject) => {
-    try {
-      User.updateOne(
-        {
-          _id: mongoose.Types.ObjectId(userId),
-          viewed: {
-            $not: {
-              $elemMatch: {
-                userId: mongoose.Types.ObjectId(receiverId),
-              },
-            },
-          },
-        },
-        {
-          $push: {
-            viewed: {
-              userId: receiverId,
-              createdAt: new Date(),
-            },
-          },
-        },
-        (err, res) => {
-          console.log(err);
-          if (err) return reject(err);
-          resolve();
-        }
-      );
-    } catch (error) {
-      console.log(error);
-      reject(error);
-    }
-  });
-
 export const getLikes = ({ userId }) =>
   new Promise((resolve, reject) => {
     try {
@@ -701,6 +665,7 @@ export const addToArray = ({ userId, receiverId, type }) => {
   let array;
   if (type === "FRIENDS") array = "friends";
   else if (type === "BLOCK") array = "blocked";
+  else if (type === "VIEW") array = "viewed";
 
   const query = { _id: mongoose.Types.ObjectId(userId) };
   const operation = {};
