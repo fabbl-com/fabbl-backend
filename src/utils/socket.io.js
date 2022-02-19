@@ -667,6 +667,26 @@ export const addToArray = ({ userId, receiverId, type }) => {
   });
 };
 
+export const removeFromBlock = ({ userId, receiverId, type }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        { _id: mongoose.Types.ObjectId(userId) },
+        {
+          $pull: {
+            blocked: { userId: mongoose.Types.ObjectId(receiverId) },
+          },
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+
 export const addToFriends = ({ userId, receiverId, status }) =>
   new Promise((resolve, reject) => {
     try {

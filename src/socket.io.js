@@ -14,6 +14,7 @@ import {
   changeUserOnline,
   makeMessageSeen,
   addToArray,
+  removeFromBlock,
   addToFriends,
   getFriends,
   getBlocked,
@@ -131,20 +132,24 @@ const connectSocket = (io) => {
           (value, index, self) =>
             index ===
             self.findIndex(
-              (t) => t.userId.toString() === value.userId.toString()
+              (t) => t.userId?.toString() === value.userId?.toString()
             )
         );
-        friends.forEach((user) => {
-          const index = messages.findIndex(
-            (el) => el.userId.toString() === user.userId.toString()
-          );
-          console.log(index);
-          if (index !== -1) messages[index].friendStatus = user.status;
-        });
-        blocked.forEach((user) => {
-          const index = messages.findIndex((el) => el.userId === user.userId);
-          if (index !== -1) messages[index].isBlocked = true;
-        });
+        if (friends && friends.length > 0)
+          friends.forEach((user) => {
+            const index = messages.findIndex(
+              (el) => el.userId?.toString() === user.userId?.toString()
+            );
+            console.log(index);
+            if (index !== -1) messages[index].friendStatus = user.status;
+          });
+        if (blocked && blocked.length > 0)
+          blocked.forEach((user) => {
+            const index = messages.findIndex(
+              (el) => el.userId?.toString() === user.userId?.toString()
+            );
+            if (index !== -1) messages[index].isBlocked = true;
+          });
 
         io.to(socket.id).emit("chat-list-response", {
           success: true,
@@ -288,7 +293,7 @@ const connectSocket = (io) => {
     socket.on("add-friends", async ({ sender, receiver }) => {
       console.log(sender, receiver, "array");
       try {
-        const [isAdded1, isAdded2] = await Promise.all([
+        const [isAdded1, isAdded2, socketID] = await Promise.all([
           addToFriends({
             userId: sender,
             receiverId: receiver,
@@ -299,12 +304,22 @@ const connectSocket = (io) => {
             receiverId: sender,
             status: "received",
           }),
+          getUserInfo({
+            userId: receiver,
+            socketID: true,
+          }),
         ]);
-        console.log(isAdded1, "array");
-        if (isAdded1 && isAdded2)
+        if (isAdded1)
           io.to(socket.id).emit("add-friends-response", {
             success: true,
+            status: "sent",
             message: "Friend Request sent",
+          });
+        if (isAdded2)
+          io.to(socketID).emit("add-friends-response", {
+            success: true,
+            status: "received",
+            message: "You have received a friend request",
           });
       } catch (error) {
         io.to(socket.id).emit("add-friends-response", {
@@ -316,21 +331,68 @@ const connectSocket = (io) => {
 
     socket.on("block", async ({ sender, receiver }) => {
       try {
-        const isBlocked = await addToArray({
-          userId: sender,
-          receiverId: receiver,
-          type: "BLOCK",
-        });
+        const [isBlocked, socketID] = await Promise.all([
+          addToArray({
+            userId: sender,
+            receiverId: receiver,
+            type: "BLOCK",
+          }),
+          getUserInfo({
+            userId: receiver,
+            socketID: true,
+          }),
+        ]);
 
-        if (isBlocked)
+        if (isBlocked) {
           io.to(socket.id).emit("block-response", {
+            success: true,
             isBlocked,
             blockedAt: new Date(),
           });
+          io.to(socketID).emit("block-response", {
+            success: true,
+            isBlockedBy: isBlocked,
+            blockedAt: new Date(),
+          });
+        }
       } catch (error) {
         io.to(socket.id).emit("block-response", {
-          isBlocked: false,
-          blockedAt: new Date(),
+          success: false,
+          message: "Failed to block",
+        });
+      }
+    });
+
+    socket.on("unblock", async ({ sender, receiver }) => {
+      try {
+        const [isUnblocked, socketID] = await Promise.all([
+          removeFromBlock({
+            userId: sender,
+            receiverId: receiver,
+            type: "UNBLOCK",
+          }),
+          getUserInfo({
+            userId: receiver,
+            socketID: true,
+          }),
+        ]);
+
+        if (isUnblocked) {
+          io.to(socket.id).emit("block-response", {
+            success: true,
+            isBlocked: false,
+            unblockedAt: new Date(),
+          });
+          io.to(socketID).emit("block-response", {
+            success: true,
+            isBlockedBy: false,
+            unblockedAt: new Date(),
+          });
+        }
+      } catch (error) {
+        io.to(socket.id).emit("block-response", {
+          success: false,
+          message: "Failed to unblock",
         });
       }
     });
