@@ -54,13 +54,6 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
             lastLogin: 1,
             displayName: 1,
             matches: 1,
-            friends: 1,
-          },
-        },
-        {
-          $unwind: {
-            path: "$friends",
-            preserveNullAndEmptyArrays: true,
           },
         },
         {
@@ -70,9 +63,6 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
             displayName: 1,
             lastLogin: 1,
             matches: 1,
-            isFriends: {
-              $in: ["$friends.userId", [mongoose.Types.ObjectId(senderId)]],
-            },
           },
         },
         {
@@ -88,7 +78,6 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
             matchAt: "$matches.createdAt",
             displayName: 1,
             lastLogin: 1,
-            isFriends: 1,
             online: 1,
           },
         },
@@ -98,6 +87,25 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
       });
     } catch (error) {
       console.log(error);
+      reject(error);
+    }
+  });
+
+export const checkBlock = ({ userId, blockedId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.find(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          "blocked.userId": mongoose.Types.ObjectId(blockedId),
+        },
+        (err, doc) => {
+          if (err) return reject(err);
+          if (doc.length > 0) resolve(true);
+          else resolve(false);
+        }
+      );
+    } catch (error) {
       reject(error);
     }
   });
@@ -118,25 +126,18 @@ export const getChatList = (userId) =>
             msgCopy: "$messages",
           },
         },
-        // { $match: { "messages.isRead": false } },
         { $unwind: "$messages" },
         {
           $group: {
             _id: "$_id",
             message_id: { $first: "$message_id" },
             receiver: { $first: "$clients" },
-            unreadCount: { $sum: 1 },
             message: { $last: "$messages.text" },
             msgCopy: { $first: "$msgCopy" },
             createdAt: { $last: "$messages.createdAt" },
           },
         },
         { $unwind: "$msgCopy" },
-        // {
-        //   $match: {
-        //     "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
-        //   },
-        // },
         {
           $group: {
             _id: "$_id",
@@ -178,23 +179,12 @@ export const getChatList = (userId) =>
           $project: {
             _id: 0,
             userId: "$profile._id",
-            // message_id: 1,
-            // receiver: 1,
             message: 1,
             createdAt: 1,
             displayName: "$profile.displayName",
             unread: 1,
             online: "$profile.online",
-            // uuid: "$profile.uuid",
             avatar: "$profile.avatar",
-            // friends: "$profile.friends",
-            // unwind first
-            isFriends: {
-              $in: [
-                "$profile.friends.userId",
-                [mongoose.Types.ObjectId(userId)],
-              ],
-            },
           },
         },
         { $sort: { createdAt: -1 } },
@@ -204,22 +194,6 @@ export const getChatList = (userId) =>
       });
     } catch (error) {
       reject(error);
-    }
-  });
-export const exitChat = (userId) =>
-  new Promise((resolve, reject) => {
-    try {
-      User.findByIdAndUpdate(
-        userId,
-        { online: false },
-        { upsert: true, new: true },
-        (err, user) => {
-          if (err) return reject(err);
-          resolve(user);
-        }
-      );
-    } catch (err) {
-      reject(err);
     }
   });
 
@@ -475,12 +449,7 @@ export const getMatches = (userId) =>
           createdAt: 1,
           displayName: "$profile.displayName",
           online: "$profile.online",
-          uuid: "$profile.uuid",
           avatar: "$profile.avatar",
-          friends: "$profile.friends",
-          isFriends: {
-            $in: ["$profile.friends.userId", [mongoose.Types.ObjectId(userId)]],
-          },
         },
       },
     ]).exec((err, res) => {
@@ -663,8 +632,7 @@ export const makeMessageSeen = ({ _id, sender, createdAt }) =>
 
 export const addToArray = ({ userId, receiverId, type }) => {
   let array;
-  if (type === "FRIENDS") array = "friends";
-  else if (type === "BLOCK") array = "blocked";
+  if (type === "BLOCK") array = "blocked";
   else if (type === "VIEW") array = "viewed";
 
   const query = { _id: mongoose.Types.ObjectId(userId) };
@@ -680,6 +648,7 @@ export const addToArray = ({ userId, receiverId, type }) => {
     userId: receiverId,
     createdAt: new Date(),
   };
+
   return new Promise((resolve, reject) => {
     try {
       User.updateOne(
@@ -697,3 +666,78 @@ export const addToArray = ({ userId, receiverId, type }) => {
     }
   });
 };
+
+export const addToFriends = ({ userId, receiverId, status }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          friends: {
+            $not: {
+              $elemMatch: {
+                userId: mongoose.Types.ObjectId(receiverId),
+              },
+            },
+          },
+        },
+        {
+          $push: {
+            friends: {
+              userId: receiverId,
+              createdAt: new Date(),
+              status,
+            },
+          },
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const getFriends = (userId) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.aggregate([
+        { $match: { _id: mongoose.Types.ObjectId(userId) } },
+        { $unwind: { path: "$friends", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            _id: 0,
+            userId: "$friends.userId",
+            status: "$friends.status",
+          },
+        },
+      ]).exec((err, res) => {
+        console.log(err);
+        if (err) return reject(err);
+        console.log(res);
+        resolve(res);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const getBlocked = (userId) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.aggregate([
+        { $match: { _id: mongoose.Types.ObjectId(userId) } },
+        { $unwind: { path: "$blocked", preserveNullAndEmptyArrays: true } },
+        { $project: { _id: 0, userId: "$blocked.userId" } },
+      ]).exec((err, res) => {
+        console.log(err, "err2");
+        if (err) return reject(err);
+        console.log(res);
+        resolve(res);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });

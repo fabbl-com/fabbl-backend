@@ -3,7 +3,6 @@ import {
   getUserInfo,
   getChatList,
   insertMessage,
-  exitChat,
   getMessages,
   getRandomUsers,
   like,
@@ -15,6 +14,10 @@ import {
   changeUserOnline,
   makeMessageSeen,
   addToArray,
+  addToFriends,
+  getFriends,
+  getBlocked,
+  checkBlock,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io) => {
@@ -65,6 +68,7 @@ const connectSocket = (io) => {
         });
       } else {
         try {
+          // check if blocked
           const [receiverSocketID, _] = await Promise.all([
             getUserInfo({
               userId: message.receiver,
@@ -84,38 +88,18 @@ const connectSocket = (io) => {
       }
     });
 
-    socket.on("exit-chat", async ({ userId }) => {
-      try {
-        await exitChat(userId);
-        io.to(socket.id).emit("exit-chat-response", {
-          success: true,
-          message: "Logged out!",
-          userId,
-        });
-        socket.broadcast.emit("exit-chat-response", {
-          success: true,
-          isDisconnected: true,
-          userId,
-        });
-      } catch (error) {
-        io.to(socket.id).emit("exit-chat-response", {
-          success: false,
-          message: "Something bad happened",
-          userId,
-        });
-      }
-    });
-
     socket.on("get-user-messages", async ({ sender, receiver }) => {
       console.log(sender, receiver);
       try {
-        const [messages, user] = await Promise.all([
+        const [messages, user, isBlockedBy] = await Promise.all([
           getMessages(sender, receiver),
           getReceiverInfo({
             senderId: sender,
             receiverId: receiver,
           }),
+          checkBlock({ userId: receiver, blockedId: sender }),
         ]);
+        user.isBlockedBy = isBlockedBy;
         // console.log(messages, "user");
         io.to(socket.id).emit("get-user-messages-response", {
           success: true,
@@ -134,10 +118,13 @@ const connectSocket = (io) => {
     socket.on("chat-list", async (userId) => {
       // console.log(userId);
       try {
-        const [onlyMatches, matchedAndMessaged] = await Promise.all([
-          getMatches(userId),
-          getChatList(userId),
-        ]);
+        const [onlyMatches, matchedAndMessaged, friends, blocked] =
+          await Promise.all([
+            getMatches(userId),
+            getChatList(userId),
+            getFriends(userId),
+            getBlocked(userId),
+          ]);
         // console.log(messages);
         const arr = [...matchedAndMessaged, ...onlyMatches];
         const messages = arr.filter(
@@ -147,6 +134,18 @@ const connectSocket = (io) => {
               (t) => t.userId.toString() === value.userId.toString()
             )
         );
+        friends.forEach((user) => {
+          const index = messages.findIndex(
+            (el) => el.userId.toString() === user.userId.toString()
+          );
+          console.log(index);
+          if (index !== -1) messages[index].friendStatus = user.status;
+        });
+        blocked.forEach((user) => {
+          const index = messages.findIndex((el) => el.userId === user.userId);
+          if (index !== -1) messages[index].isBlocked = true;
+        });
+
         io.to(socket.id).emit("chat-list-response", {
           success: true,
           // remove duplicates
@@ -289,16 +288,29 @@ const connectSocket = (io) => {
     socket.on("add-friends", async ({ sender, receiver }) => {
       console.log(sender, receiver, "array");
       try {
-        const isAdded = await addToArray({
-          userId: sender,
-          receiverId: receiver,
-          type: "FRIENDS",
-        });
-        console.log(isAdded, "array");
-        if (isAdded)
-          io.to(socket.id).emit("add-friends-response", { isFriends: isAdded });
+        const [isAdded1, isAdded2] = await Promise.all([
+          addToFriends({
+            userId: sender,
+            receiverId: receiver,
+            status: "sent",
+          }),
+          addToFriends({
+            userId: receiver,
+            receiverId: sender,
+            status: "received",
+          }),
+        ]);
+        console.log(isAdded1, "array");
+        if (isAdded1 && isAdded2)
+          io.to(socket.id).emit("add-friends-response", {
+            success: true,
+            message: "Friend Request sent",
+          });
       } catch (error) {
-        io.to(socket.id).emit("add-friends-response", { isFriends: false });
+        io.to(socket.id).emit("add-friends-response", {
+          success: false,
+          message: "Friend Request cannot be sent",
+        });
       }
     });
 

@@ -49,6 +49,7 @@ const userSchema = mongoose.Schema(
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         createdAt: { type: Date, default: Date.now() },
+        status: String, // sent, received, friends
         _id: false,
       },
     ],
