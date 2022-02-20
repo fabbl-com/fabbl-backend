@@ -245,20 +245,23 @@ const getVal = () => {
 //   return arr;
 // };
 
-export const makeMessageSeen = async (req, res, next) => {
-  try {
-    const result = await Message.updateOne(
-      {
-        _id: mongoose.Types.ObjectId("620ba2766094eef762070c9a"),
-        "messages._id": mongoose.Types.ObjectId("620cf5b1c5190fda5aadb9a8"),
-      },
-      { $set: { "messages.$.isRead": true } },
-      { new: true, upsert: true }
-    );
-    res.send(result);
-  } catch (err) {
-    console.log(err);
-  }
-};
+// export const makeMessageSeen = async (req, res, next) => {
+//   try {
+//     const result = await Message.updateOne(
+//       {
+//         _id: mongoose.Types.ObjectId("620ba2766094eef762070c9a"),
+//         "messages._id": mongoose.Types.ObjectId("620cf5b1c5190fda5aadb9a8"),
+//       },
+//       { $set: { "messages.$.isRead": true } },
+//       { new: true, upsert: true }
+//     );
+//     res.send(result);
+//   } catch (err) {
+//     console.log(err);
+//   }
+// };
 
 // console.log(insertUser());
+
+const id = new mongoose.Types.ObjectId();
+console.log(id);

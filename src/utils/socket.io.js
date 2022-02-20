@@ -1,24 +1,48 @@
 import mongoose from "mongoose";
+import { v4 as uuidv4 } from "uuid";
+import {
+  BLOCK,
+  GET_NOTIFICATION_USERS,
+  GET_RANDOM_USERS,
+  GET_SOCKET_ID,
+  LIKED,
+  MATCHED,
+  VIEW,
+} from "../constants/index.js";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 
-export const getUserInfo = ({ userId, socketID }) => {
+export const getUserInfo = ({ userId, type }) => {
   let query = null;
-  if (socketID) {
-    query = {
-      socketID: true,
-    };
-  } else {
-    query = {
-      _id: false,
-      id: "$_id",
-      hobby: true,
-      dob: true,
-      viewed: true,
-      gender: true,
-      relationshipStatus: true,
-    };
+  switch (type) {
+    case GET_SOCKET_ID:
+      query = {
+        socketID: true,
+      };
+      break;
+    case GET_RANDOM_USERS:
+      query = {
+        _id: false,
+        id: "$_id",
+        hobby: true,
+        dob: true,
+        viewed: true,
+        gender: true,
+        relationshipStatus: true,
+      };
+      break;
+    case GET_NOTIFICATION_USERS:
+      query = {
+        _id: false,
+        id: "$_id",
+        displayName: true,
+        avatar: true,
+      };
+      break;
+    default:
+      break;
   }
+
   return new Promise((resolve, reject) => {
     try {
       User.aggregate([
@@ -30,7 +54,7 @@ export const getUserInfo = ({ userId, socketID }) => {
         { $project: query },
       ]).exec((err, res) => {
         if (err) return reject(err);
-        if (socketID) {
+        if (type === GET_SOCKET_ID) {
           resolve(res[0]?.socketID);
         } else {
           resolve(res[0]);
@@ -546,7 +570,7 @@ export const checkLike = ({ sent, senderId, receiverId }) => {
     ]).exec((err, res) => {
       console.log(err);
       if (err) return reject(err);
-      console.log(res);
+      // console.log(res);
       resolve(res[0]?.interaction.userId);
     });
   });
@@ -632,8 +656,8 @@ export const makeMessageSeen = ({ _id, sender, createdAt }) =>
 
 export const addToArray = ({ userId, receiverId, type }) => {
   let array;
-  if (type === "BLOCK") array = "blocked";
-  else if (type === "VIEW") array = "viewed";
+  if (type === BLOCK) array = "blocked";
+  else if (type === VIEW) array = "viewed";
 
   const query = { _id: mongoose.Types.ObjectId(userId) };
   const operation = {};
@@ -761,3 +785,51 @@ export const getBlocked = (userId) =>
       reject(error);
     }
   });
+
+export const addToNotifications = ({
+  userId,
+  receiverId,
+  notificationType,
+}) => {
+  let obj = {
+    notificationId: uuidv4(),
+    userId: receiverId,
+    isRead: false,
+    createdAt: new Date(),
+  };
+  switch (notificationType) {
+    case LIKED:
+      obj = { ...obj, notificationType: LIKED };
+      break;
+    case MATCHED:
+      obj = { ...obj, notificationType: MATCHED };
+      break;
+    default:
+      break;
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          notifications: {
+            $not: {
+              $elemMatch: {
+                userId: mongoose.Types.ObjectId(receiverId),
+              },
+            },
+          },
+        },
+        {
+          $push: { notifications: obj },
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(obj);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+};

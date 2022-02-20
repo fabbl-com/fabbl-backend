@@ -1,31 +1,46 @@
 import {
+  BLOCK,
+  GET_NOTIFICATION_USERS,
+  GET_RANDOM_USERS,
+  GET_SOCKET_ID,
+  LIKED,
+  MATCHED,
+  UNBLOCK,
+  VIEW,
+} from "./constants/index.js";
+import {
   addSocketID,
-  getUserInfo,
+  addToArray,
+  addToFriends,
+  addToNotifications,
+  changeUserOnline,
+  checkBlock,
+  checkLike,
+  getBlocked,
   getChatList,
-  insertMessage,
-  getMessages,
-  getRandomUsers,
-  like,
+  getFriends,
   getLikes,
   getMatches,
-  checkLike,
-  match,
+  getMessages,
+  getRandomUsers,
   getReceiverInfo,
-  changeUserOnline,
+  getUserInfo,
+  insertMessage,
+  like,
   makeMessageSeen,
-  addToArray,
+  match,
   removeFromBlock,
-  addToFriends,
-  getFriends,
-  getBlocked,
-  checkBlock,
 } from "./utils/socket.io.js";
 
-const connectSocket = (io) => {
+const connectSocket = (io, session) => {
   io.use(async (socket, next) => {
-    const { userId } = await socket.request._query;
-    console.log(userId);
+    console.log(socket.handshake, "handshake");
+    session(socket.request, {}, next);
+  });
+  io.on("connection", async (socket) => {
     try {
+      const { userId } = await socket.request._query;
+      console.info(`⚡︎ New connection: ${userId}`);
       const [res1, res2] = await Promise.all([
         changeUserOnline({
           userId,
@@ -36,20 +51,14 @@ const connectSocket = (io) => {
           socketID: socket.id,
         }),
       ]);
-      // console.log(res1, res2, "resolved");
       socket.broadcast.emit("connection-response", {
         connected: true,
         userId,
         lastLogin: new Date(),
       });
-      next();
     } catch (error) {
-      console.error(error);
-      next(error);
+      console.log(error);
     }
-  });
-  io.on("connection", (socket) => {
-    console.log("connected");
     socket.on("send-message", async (message) => {
       // console.log(message);
       if (!message.text) {
@@ -73,7 +82,7 @@ const connectSocket = (io) => {
           const [receiverSocketID, _] = await Promise.all([
             getUserInfo({
               userId: message.receiver,
-              socketID: true,
+              type: GET_SOCKET_ID,
             }),
             insertMessage(message),
           ]);
@@ -170,7 +179,7 @@ const connectSocket = (io) => {
       try {
         const user = await getUserInfo({
           userId,
-          socketID: false,
+          type: GET_RANDOM_USERS,
         });
         // console.log(user, "user");
         const baseUser = {
@@ -205,7 +214,7 @@ const connectSocket = (io) => {
       try {
         const socketID = await getUserInfo({
           userId: receiverId,
-          socketID: true,
+          type: GET_SOCKET_ID,
         });
 
         const [user1ID, user2ID] = await Promise.all([
@@ -216,25 +225,51 @@ const connectSocket = (io) => {
         // console.log(user1ID, user2ID, "checklike");
 
         if (user1ID && user2ID) {
-          const [result1, result2] = await Promise.all([
-            match({ senderId: user1ID, receiverId: user2ID }),
-            match({ senderId: user2ID, receiverId: user1ID }),
-          ]);
+          const [result1, result2, notification1, notification2, user1, user2] =
+            await Promise.all([
+              match({ senderId: user1ID, receiverId: user2ID }),
+              match({ senderId: user2ID, receiverId: user1ID }),
+              addToNotifications({
+                userId: senderId,
+                receiverId,
+                notificationType: MATCHED,
+              }),
+              addToNotifications({
+                userId: receiverId,
+                receiverId: senderId,
+                notificationType: MATCHED,
+              }),
+              getUserInfo({ userId: senderId, type: GET_NOTIFICATION_USERS }),
+              getUserInfo({ userId: receiverId, type: GET_NOTIFICATION_USERS }),
+            ]);
 
           // console.log(result1, result2);
-
+          io.to(socket.id).emit("send-notifications", {
+            ...notification1,
+            ...user1,
+          });
+          io.to(socketID).emit("send-notifications", {
+            ...notification2,
+            ...user2,
+          });
           io.to(socketID).emit("like-response", {
             success: true,
             isMatched: true,
           });
         } else {
-          const [result1, result2, likes] = await Promise.all([
+          const [result1, result2, likes, notification] = await Promise.all([
             like({ sent: true, senderId, receiverId }),
             like({ sent: false, senderId, receiverId }),
             getLikes({ userId: receiverId }),
+            addToNotifications({
+              userId: receiverId,
+              receiverId: senderId,
+              notificationType: LIKED,
+            }),
           ]);
 
           // console.log(result1, result2, socketID, likes.interaction.received);
+          io.to(socketID).emit("send-notifications", notification);
           io.to(socketID).emit("like-response", {
             success: true,
             likes: likes.interaction.received,
@@ -258,7 +293,7 @@ const connectSocket = (io) => {
           addToArray({
             userId: receiverId,
             receiverId: senderId,
-            type: "VIEW",
+            type: VIEW,
           }),
         ]);
       } catch (error) {
@@ -273,7 +308,7 @@ const connectSocket = (io) => {
           makeMessageSeen({ _id, sender, createdAt }),
           getUserInfo({
             userId: sender,
-            socketID: true,
+            type: GET_SOCKET_ID,
           }),
         ]);
 
@@ -306,7 +341,7 @@ const connectSocket = (io) => {
           }),
           getUserInfo({
             userId: receiver,
-            socketID: true,
+            type: GET_SOCKET_ID,
           }),
         ]);
         if (isAdded1)
@@ -335,11 +370,11 @@ const connectSocket = (io) => {
           addToArray({
             userId: sender,
             receiverId: receiver,
-            type: "BLOCK",
+            type: BLOCK,
           }),
           getUserInfo({
             userId: receiver,
-            socketID: true,
+            type: GET_SOCKET_ID,
           }),
         ]);
 
@@ -369,11 +404,11 @@ const connectSocket = (io) => {
           removeFromBlock({
             userId: sender,
             receiverId: receiver,
-            type: "UNBLOCK",
+            type: UNBLOCK,
           }),
           getUserInfo({
             userId: receiver,
-            socketID: true,
+            type: GET_SOCKET_ID,
           }),
         ]);
 
