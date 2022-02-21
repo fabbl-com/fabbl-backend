@@ -12,6 +12,8 @@ import {
   CONFIRMED_FRIEND_REQUEST,
   DECLINED_FRIEND_REQUEST,
   DELETE_NOTIFICATION,
+  RELOAD_SENT,
+  RELOAD_RECEIVED,
 } from "./constants/index.js";
 import {
   addSocketID,
@@ -302,6 +304,41 @@ const connectSocket = (io, session) => {
             type: VIEWED,
           }),
         ]);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    socket.on("reload", async ({ senderId, receiverId }) => {
+      try {
+        const res = await Promise.all([
+          removeFromArray({
+            userId: receiverId,
+            removedId: senderId,
+            type: RELOAD_SENT,
+          }),
+          removeFromArray({
+            userId: senderId,
+            removedId: receiverId,
+            type: RELOAD_SENT,
+          }),
+          removeFromArray({
+            userId: receiverId,
+            removedId: senderId,
+            type: RELOAD_RECEIVED,
+          }),
+          removeFromArray({
+            userId: senderId,
+            removedId: receiverId,
+            type: RELOAD_RECEIVED,
+          }),
+        ]);
+        if (res[0] && res[1] && res[2] && res[3]) {
+          io.to(socket.id).emit("reload-response", {
+            success: true,
+            message: "Realod success",
+          });
+        }
       } catch (error) {
         console.log(error);
       }

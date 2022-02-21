@@ -7,6 +7,8 @@ import {
   GET_RANDOM_USERS,
   GET_SOCKET_ID,
   GET_SOCKET_ID_AND_GET_NOTIFICATION_USERS,
+  RELOAD_RECEIVED,
+  RELOAD_SENT,
   UNBLOCKED,
   VIEWED,
 } from "../constants/index.js";
@@ -709,6 +711,16 @@ export const removeFromArray = ({ userId, removedId, type }) => {
     case DELETE_NOTIFICATION:
       obj = {
         notifications: { notificationId: removedId },
+      };
+      break;
+    case RELOAD_SENT:
+      obj = {
+        "interaction.sent": { userId: mongoose.Types.ObjectId(removedId) },
+      };
+      break;
+    case RELOAD_RECEIVED:
+      obj = {
+        "interaction.received": { userId: mongoose.Types.ObjectId(removedId) },
       };
       break;
     default:
