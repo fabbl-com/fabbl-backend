@@ -30,6 +30,11 @@ export const login = (req, res, next) => {
       });
     req.login(user, (err) => {
       if (err) return next(err);
+      if (req.body.rememberMe) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+      } else {
+        req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
+      }
       return res.status(200).json({
         success: true,
         userId: user,
