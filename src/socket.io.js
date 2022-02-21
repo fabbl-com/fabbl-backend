@@ -37,6 +37,7 @@ import {
   insertMessage,
   like,
   makeMessageSeen,
+  markAsRead,
   match,
   removeFromArray,
 } from "./utils/socket.io.js";
@@ -620,6 +621,23 @@ const connectSocket = (io, session) => {
         io.to(socket.id).emit("block-response", {
           success: false,
           message: "Failed to unblock",
+        });
+      }
+    });
+
+    socket.on("read-all", async ({ userId }) => {
+      try {
+        const res = await markAsRead(userId);
+        if (res)
+          io.to(socket.id).emit("read-all-response", {
+            success: true,
+            count: 0,
+          });
+      } catch (error) {
+        console.log(error);
+        io.to(socket.id).emit("read-all-response", {
+          success: false,
+          message: "Failed to mark notifications as read",
         });
       }
     });

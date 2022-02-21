@@ -897,3 +897,22 @@ export const declineFriendRequest = async ({ userId, receiverId }) =>
       reject(error);
     }
   });
+
+export const markAsRead = (userId) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateMany(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          "notifications.isRead": false,
+        },
+        { $set: { "notifications.$.isRead": true } },
+        (err, res) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
