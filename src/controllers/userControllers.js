@@ -59,7 +59,7 @@ export const sendResetPasswordMail = async (req, res, next) => {
         const URL = `${process.env.CLIENT_URL}/user/reset-password/?token=${passwordResetToken}`;
 
         try {
-          const result = await sendMail(user.email, URL, "reset");
+          const result = await sendMail(email, URL, "reset");
           if (!result)
             return next(
               new ErrorMessage(
@@ -160,8 +160,13 @@ export const verifyEmail = (req, res, next) => {
 // @access  private
 export const updatePassword = async (req, res, next) => {
   const userId = req.params.id;
-
-  const { oldPassword, newPassword } = req.body;
+  const { oldPassword, newPassword, token } = req.body;
+  // if (token) {
+  //   const decoded = jwt.verify(
+  //     token,
+  //     process.env.EMAIL_VERIFICATION_TOKEN_SECERT
+  //   );
+  // }
   console.log(userId, oldPassword, newPassword);
   try {
     const user = await User.findById(userId);
