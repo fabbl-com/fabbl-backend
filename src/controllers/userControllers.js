@@ -218,6 +218,7 @@ export const checkAuth = async (req, res, next) => {
                 notificationType: "$notifications.notificationType",
                 isRead: "$notifications.isRead",
                 createdAt: "$notifications.createdAt",
+                userId: "$profile._id",
                 displayName: "$profile.displayName",
                 avatar: "$profile.avatar",
               },

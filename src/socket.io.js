@@ -1,12 +1,17 @@
 import {
-  BLOCK,
+  BLOCKED,
   GET_NOTIFICATION_USERS,
   GET_RANDOM_USERS,
   GET_SOCKET_ID,
+  GET_SOCKET_ID_AND_GET_NOTIFICATION_USERS,
   LIKED,
   MATCHED,
-  UNBLOCK,
-  VIEW,
+  UNBLOCKED,
+  VIEWED,
+  GOT_FRIEND_REQUEST,
+  CONFIRMED_FRIEND_REQUEST,
+  DECLINED_FRIEND_REQUEST,
+  DELETE_NOTIFICATION,
 } from "./constants/index.js";
 import {
   addSocketID,
@@ -16,6 +21,8 @@ import {
   changeUserOnline,
   checkBlock,
   checkLike,
+  confirmFriendRequest,
+  declineFriendRequest,
   getBlocked,
   getChatList,
   getFriends,
@@ -29,12 +36,11 @@ import {
   like,
   makeMessageSeen,
   match,
-  removeFromBlock,
+  removeFromArray,
 } from "./utils/socket.io.js";
 
 const connectSocket = (io, session) => {
   io.use(async (socket, next) => {
-    console.log(socket.handshake, "handshake");
     session(socket.request, {}, next);
   });
   io.on("connection", async (socket) => {
@@ -99,7 +105,7 @@ const connectSocket = (io, session) => {
     });
 
     socket.on("get-user-messages", async ({ sender, receiver }) => {
-      console.log(sender, receiver);
+      // console.log(sender, receiver);
       try {
         const [messages, user, isBlockedBy] = await Promise.all([
           getMessages(sender, receiver),
@@ -149,7 +155,7 @@ const connectSocket = (io, session) => {
             const index = messages.findIndex(
               (el) => el.userId?.toString() === user.userId?.toString()
             );
-            console.log(index);
+            // console.log(index);
             if (index !== -1) messages[index].friendStatus = user.status;
           });
         if (blocked && blocked.length > 0)
@@ -293,7 +299,7 @@ const connectSocket = (io, session) => {
           addToArray({
             userId: receiverId,
             receiverId: senderId,
-            type: VIEW,
+            type: VIEWED,
           }),
         ]);
       } catch (error) {
@@ -303,7 +309,7 @@ const connectSocket = (io, session) => {
 
     socket.on("read", async ({ _id, createdAt, sender }) => {
       try {
-        console.log(_id, createdAt, sender, "read");
+        // console.log(_id, createdAt, sender, "read");
         const [isRead, socketId] = await Promise.all([
           makeMessageSeen({ _id, sender, createdAt }),
           getUserInfo({
@@ -312,7 +318,7 @@ const connectSocket = (io, session) => {
           }),
         ]);
 
-        console.log(isRead, socketId);
+        // console.log(isRead, socketId);
 
         if (isRead)
           io.to(socketId).emit("read-response", {
@@ -326,9 +332,9 @@ const connectSocket = (io, session) => {
     });
 
     socket.on("add-friends", async ({ sender, receiver }) => {
-      console.log(sender, receiver, "array");
+      // console.log(sender, receiver, "array");
       try {
-        const [isAdded1, isAdded2, socketID] = await Promise.all([
+        const [isAdded1, isAdded2, notification, user] = await Promise.all([
           addToFriends({
             userId: sender,
             receiverId: receiver,
@@ -339,9 +345,14 @@ const connectSocket = (io, session) => {
             receiverId: sender,
             status: "received",
           }),
+          addToNotifications({
+            userId: receiver,
+            receiverId: sender,
+            notificationType: GOT_FRIEND_REQUEST,
+          }),
           getUserInfo({
             userId: receiver,
-            type: GET_SOCKET_ID,
+            type: GET_SOCKET_ID_AND_GET_NOTIFICATION_USERS,
           }),
         ]);
         if (isAdded1)
@@ -350,13 +361,20 @@ const connectSocket = (io, session) => {
             status: "sent",
             message: "Friend Request sent",
           });
-        if (isAdded2)
-          io.to(socketID).emit("add-friends-response", {
+        if (isAdded2) {
+          io.to(user.socketID).emit("send-notifications", {
+            ...notification,
+            avatar: user.avatar,
+            displayName: user.displayName,
+          });
+          io.to(user.socketID).emit("add-friends-response", {
             success: true,
             status: "received",
             message: "You have received a friend request",
           });
+        }
       } catch (error) {
+        console.log(error);
         io.to(socket.id).emit("add-friends-response", {
           success: false,
           message: "Friend Request cannot be sent",
@@ -364,17 +382,137 @@ const connectSocket = (io, session) => {
       }
     });
 
+    socket.on(
+      "confirm-friends-request",
+      async ({ sender, receiver, notificationId }) => {
+        console.log(sender, receiver, notificationId, "hello");
+        try {
+          const [
+            isConfirmed1,
+            isConfirmed2,
+            notification,
+            user,
+            socketID,
+            isDeleted,
+          ] = await Promise.all([
+            confirmFriendRequest({ userId: sender, receiverId: receiver }),
+            confirmFriendRequest({ userId: receiver, receiverId: sender }),
+            addToNotifications({
+              userId: receiver,
+              receiverId: sender,
+              notificationType: CONFIRMED_FRIEND_REQUEST,
+            }),
+            getUserInfo({
+              userId: sender,
+              type: GET_NOTIFICATION_USERS,
+            }),
+            getUserInfo({
+              userId: receiver,
+              type: GET_SOCKET_ID,
+            }),
+            removeFromArray({
+              userId: sender,
+              removedId: notificationId,
+              type: DELETE_NOTIFICATION,
+            }),
+          ]);
+          console.log(socketID);
+          if (isConfirmed1 && isDeleted)
+            io.to(socket.id).emit("friends-request-response", {
+              success: true,
+              messsage: "Friend request confirmed",
+              notificationId,
+            });
+
+          if (isConfirmed2)
+            io.to(socketID).emit("send-notifications", {
+              ...notification,
+              avatar: user.avatar,
+              displayName: user.displayName,
+            });
+        } catch (error) {
+          console.log(error);
+          io.to(socket.id).emit("friends-request-response", {
+            success: false,
+            message: "Cannot confirm friend request",
+          });
+        }
+      }
+    );
+
+    socket.on(
+      "decline-friends-request",
+      async ({ sender, receiver, notificationId }) => {
+        try {
+          const [
+            isDeclined1,
+            isDeclined2,
+            notification,
+            user,
+            socketID,
+            isDeleted,
+          ] = await Promise.all([
+            declineFriendRequest({ userId: sender, receiverId: receiver }),
+            declineFriendRequest({ userId: receiver, receiverId: sender }),
+            addToNotifications({
+              userId: receiver,
+              receiverId: sender,
+              notificationType: DECLINED_FRIEND_REQUEST,
+            }),
+            getUserInfo({
+              userId: sender,
+              type: GET_NOTIFICATION_USERS,
+            }),
+            getUserInfo({
+              userId: receiver,
+              type: GET_SOCKET_ID,
+            }),
+            await removeFromArray({
+              userId: sender,
+              removedId: notificationId,
+              type: DELETE_NOTIFICATION,
+            }),
+          ]);
+
+          if (isDeclined1 && isDeleted)
+            io.to(socket.id).emit("friends-request-response", {
+              success: true,
+              messsage: "Friend request declined",
+              notificationId,
+            });
+
+          if (isDeclined2)
+            io.to(socketID).emit("send-notifications", {
+              ...notification,
+              avatar: user.avatar,
+              displayName: user.displayName,
+            });
+        } catch (error) {
+          console.log(error);
+          io.to(socket.id).emit("friends-request-response", {
+            success: false,
+            message: "Cannot confirm friend request",
+          });
+        }
+      }
+    );
+
     socket.on("block", async ({ sender, receiver }) => {
       try {
-        const [isBlocked, socketID] = await Promise.all([
+        const [isBlocked, notification, user] = await Promise.all([
           addToArray({
             userId: sender,
             receiverId: receiver,
-            type: BLOCK,
+            type: BLOCKED,
+          }),
+          addToNotifications({
+            userId: receiver,
+            receiverId: sender,
+            notificationType: BLOCKED,
           }),
           getUserInfo({
             userId: receiver,
-            type: GET_SOCKET_ID,
+            type: GET_SOCKET_ID_AND_GET_NOTIFICATION_USERS,
           }),
         ]);
 
@@ -384,13 +522,19 @@ const connectSocket = (io, session) => {
             isBlocked,
             blockedAt: new Date(),
           });
-          io.to(socketID).emit("block-response", {
+          io.to(user.socketID).emit("send-notifications", {
+            ...notification,
+            avatar: user.avatar,
+            displayName: user.displayName,
+          });
+          io.to(user.socketID).emit("block-response", {
             success: true,
             isBlockedBy: isBlocked,
             blockedAt: new Date(),
           });
         }
       } catch (error) {
+        console.log(error);
         io.to(socket.id).emit("block-response", {
           success: false,
           message: "Failed to block",
@@ -400,31 +544,42 @@ const connectSocket = (io, session) => {
 
     socket.on("unblock", async ({ sender, receiver }) => {
       try {
-        const [isUnblocked, socketID] = await Promise.all([
-          removeFromBlock({
+        const [isUnblocked, notification, user] = await Promise.all([
+          removeFromArray({
             userId: sender,
-            receiverId: receiver,
-            type: UNBLOCK,
+            removedId: receiver,
+            type: UNBLOCKED,
+          }),
+          addToNotifications({
+            userId: receiver,
+            receiverId: sender,
+            notificationType: UNBLOCKED,
           }),
           getUserInfo({
             userId: receiver,
-            type: GET_SOCKET_ID,
+            type: GET_SOCKET_ID_AND_GET_NOTIFICATION_USERS,
           }),
         ]);
 
         if (isUnblocked) {
           io.to(socket.id).emit("block-response", {
             success: true,
-            isBlocked: false,
+            isBlocked: true,
             unblockedAt: new Date(),
           });
-          io.to(socketID).emit("block-response", {
+          io.to(user.socketID).emit("send-notifications", {
+            ...notification,
+            avatar: user.avatar,
+            displayName: user.displayName,
+          });
+          io.to(user.socketID).emit("block-response", {
             success: true,
             isBlockedBy: false,
             unblockedAt: new Date(),
           });
         }
       } catch (error) {
+        console.log(error);
         io.to(socket.id).emit("block-response", {
           success: false,
           message: "Failed to unblock",
