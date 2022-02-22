@@ -50,6 +50,7 @@ export const localLoginStrategy = new LocalStrategy(
   (req, email, password, next) => {
     console.log(email, password);
     User.findOne({ email }, (err, user) => {
+      console.log(user);
       if (err) return next(err);
       if (!user)
         return next(null, false, {
@@ -62,19 +63,10 @@ export const localLoginStrategy = new LocalStrategy(
           return next(null, false, {
             message: "Email or password is incorrect",
           });
-        try {
-          const userId = await changeUserOnline({
-            userId: user.id,
-            changeToOnline: true,
-          });
-          const sessUser = { id: user.id, email: user.email };
-          req.session.user = sessUser;
-          console.log(userId);
-          next(null, userId);
-        } catch (err) {
-          console.log(err);
-          return next(err);
-        }
+
+        const sessUser = { id: user.id, email: user.email };
+        req.session.user = sessUser;
+        next(null, user.id);
       });
     });
   }

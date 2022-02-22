@@ -906,7 +906,8 @@ export const markAsRead = (userId) =>
           _id: mongoose.Types.ObjectId(userId),
           "notifications.isRead": false,
         },
-        { $set: { "notifications.$.isRead": true } },
+        { $set: { "notifications.$[elem].isRead": true } },
+        { arrayFilters: [{ "elem.isRead": false }], multi: true },
         (err, res) => {
           if (err) return reject(err);
           resolve(true);

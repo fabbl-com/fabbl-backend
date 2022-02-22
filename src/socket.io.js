@@ -44,22 +44,23 @@ import {
 
 const connectSocket = (io, session) => {
   io.use(async (socket, next) => {
+    const { userId } = await socket.request._query;
+    const [res1, res2] = await Promise.all([
+      changeUserOnline({
+        userId,
+        changeToOnline: true,
+      }),
+      addSocketID({
+        userId: socket.request._query.userId,
+        socketID: socket.id,
+      }),
+    ]);
     session(socket.request, {}, next);
   });
   io.on("connection", async (socket) => {
     try {
       const { userId } = await socket.request._query;
       console.info(`⚡︎ New connection: ${userId}`);
-      const [res1, res2] = await Promise.all([
-        changeUserOnline({
-          userId,
-          changeToOnline: true,
-        }),
-        addSocketID({
-          userId: socket.request._query.userId,
-          socketID: socket.id,
-        }),
-      ]);
       socket.broadcast.emit("connection-response", {
         connected: true,
         userId,
@@ -135,7 +136,7 @@ const connectSocket = (io, session) => {
     });
 
     socket.on("chat-list", async (userId) => {
-      // console.log(userId);
+      console.log(userId, "chat-list");
       try {
         const [onlyMatches, matchedAndMessaged, friends, blocked] =
           await Promise.all([
@@ -253,11 +254,11 @@ const connectSocket = (io, session) => {
             ]);
 
           // console.log(result1, result2);
-          io.to(socket.id).emit("send-notifications", {
+          io.to(socketID).emit("send-notifications", {
             ...notification1,
             ...user1,
           });
-          io.to(socketID).emit("send-notifications", {
+          io.to(socket.id).emit("send-notifications", {
             ...notification2,
             ...user2,
           });

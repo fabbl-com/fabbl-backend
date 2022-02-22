@@ -6,6 +6,7 @@ import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
+import { getNotifications, getProfile } from "./helpers/index.js";
 
 export const register = (req, res, next) => {
   passport.authenticate("local.register", (err, user, info) => {
@@ -145,6 +146,7 @@ export const verifyEmail = (req, res, next) => {
     token,
     process.env.EMAIL_VERIFICATION_TOKEN_SECERT,
     (err, newUser) => {
+      console.log(newUser);
       if (err) return next(new ErrorMessage(err.message, 401));
       User.findByIdAndUpdate(
         newUser.userId,
@@ -192,57 +194,17 @@ export const updatePassword = async (req, res, next) => {
   }
 };
 
-export const checkAuth = async (req, res, next) => {
-  if (req.session.user) {
-    console.log(req.session.user);
-    const userId = req.session.user.id;
-    try {
-      const notifications = await new Promise((resolve, reject) => {
-        try {
-          User.aggregate([
-            { $match: { _id: mongoose.Types.ObjectId(userId) } },
-            {
-              $project: {
-                _id: 0,
-                notifications: 1,
-              },
-            },
-            { $unwind: { path: "$notifications" } },
-            {
-              $lookup: {
-                from: "users",
-                localField: "notifications.userId",
-                foreignField: "_id",
-                as: "profile",
-              },
-            },
-            { $unwind: { path: "$profile" } },
-            {
-              $project: {
-                notificationId: "$notifications.notificationId",
-                notificationType: "$notifications.notificationType",
-                isRead: "$notifications.isRead",
-                createdAt: "$notifications.createdAt",
-                userId: "$profile._id",
-                displayName: "$profile.displayName",
-                avatar: "$profile.avatar",
-              },
-            },
-          ]).exec((err, res) => {
-            if (err) return reject(err);
-            console.log(res);
-            resolve(res);
-          });
-        } catch (error) {
-          reject(error);
-        }
-      });
-      return res.status(200).json({ success: true, notifications });
-    } catch (error) {
-      return next(error);
-    }
+export const getUserProfile = async (req, res, next) => {
+  const userId = req.session.user.id;
+  try {
+    const [notifications, profile] = await Promise.all([
+      getNotifications(userId),
+      getProfile(userId),
+    ]);
+    return res.status(200).json({ success: true, notifications, profile });
+  } catch (error) {
+    return next(error);
   }
-  next(new ErrorMessage("Access denied", 401));
 };
 
 // @route     post /user/change/password

@@ -8,7 +8,7 @@ import {
   updatePassword,
   verifyEmail,
   sendResetPasswordMail,
-  checkAuth,
+  getUserProfile,
 } from "./controllers/userControllers.js";
 // import { insertMessage } from "./utils/socket.io.js";
 // import { insertUser } from "./test/controllers.js";
@@ -62,7 +62,7 @@ router.get(
   }
 );
 
-router.get("/auth/check", checkAuth);
+router.get("/auth/check", isAuth, getUserProfile);
 
 // only for testing
 // router.post("/add-users", insertUser);
@@ -111,7 +111,7 @@ router.post("/user/send-update-email/:id", isAuth, sendUpdateEmail);
 router.get("/user/verify-email/:token", isAuth, verifyEmail);
 router.get("/user/profile/:id", isAuth, currentUserProfile);
 router.post("/user/profile/:id", isAuth, updateSettings);
-router.post("/user/profile/Personal/:id", isAuth, updatePersonalData);
+router.post("/user/profile/personal/:id", isAuth, updatePersonalData);
 router.post("/user/update-password/:id", isAuth, updatePassword);
 
 router.post("/user/upload/image/:id", imageUpload);

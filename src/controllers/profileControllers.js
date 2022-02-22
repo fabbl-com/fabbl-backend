@@ -2,6 +2,7 @@ import cloudinary from "cloudinary";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import keys from "../config/keys.js";
+import { getProfile } from "./helpers/index.js";
 // @route     GET  /user/profile/:id
 // desc         get current user profile
 // @access  private
@@ -95,11 +96,15 @@ export const updatePersonalData = async (req, res, next) => {
       "hobby.value": hobbiesData,
     };
 
-    const profile = await User.findByIdAndUpdate(
+    User.findByIdAndUpdate(
       userId,
       { $set: profileData },
-      { new: true, upsert: true }
-    ).select("-password");
+      { new: true, upsert: true },
+      (err, doc) => {
+        if (err) return next(err);
+      }
+    );
+    const profile = await getProfile(userId);
     if (!profile) return next(new ErrorMessage("Something went wrong...", 400));
     return res.status(200).json({ success: true, profile });
   } catch (err) {
