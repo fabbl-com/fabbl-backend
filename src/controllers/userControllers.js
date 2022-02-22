@@ -1,6 +1,7 @@
 import passport from "passport";
 import jwt from "jsonwebtoken";
 import util from "util";
+import mongoose from "mongoose";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
@@ -29,6 +30,11 @@ export const login = (req, res, next) => {
       });
     req.login(user, (err) => {
       if (err) return next(err);
+      if (req.body.rememberMe) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+      } else {
+        req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
+      }
       return res.status(200).json({
         success: true,
         userId: user,
@@ -186,22 +192,57 @@ export const updatePassword = async (req, res, next) => {
   }
 };
 
-export const checkAuth = (req, res, next) => {
+export const checkAuth = async (req, res, next) => {
   if (req.session.user) {
     console.log(req.session.user);
     const userId = req.session.user.id;
-    User.findByIdAndUpdate(
-      userId,
-      {
-        $set: { lastLogin: new Date() },
-      },
-      (err, res) => {
-        if (err) return next(err);
-      }
-    );
-    return res.status(200).json({ success: true });
+    try {
+      const notifications = await new Promise((resolve, reject) => {
+        try {
+          User.aggregate([
+            { $match: { _id: mongoose.Types.ObjectId(userId) } },
+            {
+              $project: {
+                _id: 0,
+                notifications: 1,
+              },
+            },
+            { $unwind: { path: "$notifications" } },
+            {
+              $lookup: {
+                from: "users",
+                localField: "notifications.userId",
+                foreignField: "_id",
+                as: "profile",
+              },
+            },
+            { $unwind: { path: "$profile" } },
+            {
+              $project: {
+                notificationId: "$notifications.notificationId",
+                notificationType: "$notifications.notificationType",
+                isRead: "$notifications.isRead",
+                createdAt: "$notifications.createdAt",
+                userId: "$profile._id",
+                displayName: "$profile.displayName",
+                avatar: "$profile.avatar",
+              },
+            },
+          ]).exec((err, res) => {
+            if (err) return reject(err);
+            console.log(res);
+            resolve(res);
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+      return res.status(200).json({ success: true, notifications });
+    } catch (error) {
+      return next(error);
+    }
   }
-  return next(new ErrorMessage("Access denied", 401));
+  next(new ErrorMessage("Access denied", 401));
 };
 
 // @route     post /user/change/password

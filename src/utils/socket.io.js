@@ -1,24 +1,57 @@
 import mongoose from "mongoose";
+import { v4 as uuidv4 } from "uuid";
+import {
+  BLOCKED,
+  DELETE_NOTIFICATION,
+  GET_NOTIFICATION_USERS,
+  GET_RANDOM_USERS,
+  GET_SOCKET_ID,
+  GET_SOCKET_ID_AND_GET_NOTIFICATION_USERS,
+  RELOAD_RECEIVED,
+  RELOAD_SENT,
+  UNBLOCKED,
+  VIEWED,
+} from "../constants/index.js";
 import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 
-export const getUserInfo = ({ userId, socketID }) => {
+export const getUserInfo = ({ userId, type }) => {
   let query = null;
-  if (socketID) {
-    query = {
-      socketID: true,
-    };
-  } else {
-    query = {
-      _id: false,
-      id: "$_id",
-      hobby: true,
-      dob: true,
-      viewed: true,
-      gender: true,
-      relationshipStatus: true,
-    };
+  switch (type) {
+    case GET_SOCKET_ID:
+      query = {
+        socketID: true,
+      };
+      break;
+    case GET_RANDOM_USERS:
+      query = {
+        _id: false,
+        hobby: true,
+        dob: true,
+        viewed: true,
+        gender: true,
+        relationshipStatus: true,
+      };
+      break;
+    case GET_NOTIFICATION_USERS:
+      query = {
+        _id: false,
+        displayName: true,
+        avatar: true,
+      };
+      break;
+    case GET_SOCKET_ID_AND_GET_NOTIFICATION_USERS:
+      query = {
+        _id: false,
+        socketID: true,
+        displayName: true,
+        avatar: true,
+      };
+      break;
+    default:
+      break;
   }
+
   return new Promise((resolve, reject) => {
     try {
       User.aggregate([
@@ -30,8 +63,8 @@ export const getUserInfo = ({ userId, socketID }) => {
         { $project: query },
       ]).exec((err, res) => {
         if (err) return reject(err);
-        if (socketID) {
-          resolve(res[0].socketID);
+        if (type === GET_SOCKET_ID) {
+          resolve(res[0]?.socketID);
         } else {
           resolve(res[0]);
         }
@@ -54,13 +87,6 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
             lastLogin: 1,
             displayName: 1,
             matches: 1,
-            friends: 1,
-          },
-        },
-        {
-          $unwind: {
-            path: "$friends",
-            preserveNullAndEmptyArrays: true,
           },
         },
         {
@@ -70,9 +96,6 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
             displayName: 1,
             lastLogin: 1,
             matches: 1,
-            isFriends: {
-              $in: ["$friends.userId", [mongoose.Types.ObjectId(senderId)]],
-            },
           },
         },
         {
@@ -88,7 +111,6 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
             matchAt: "$matches.createdAt",
             displayName: 1,
             lastLogin: 1,
-            isFriends: 1,
             online: 1,
           },
         },
@@ -98,6 +120,25 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
       });
     } catch (error) {
       console.log(error);
+      reject(error);
+    }
+  });
+
+export const checkBlock = ({ userId, blockedId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.find(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          "blocked.userId": mongoose.Types.ObjectId(blockedId),
+        },
+        (err, doc) => {
+          if (err) return reject(err);
+          if (doc.length > 0) resolve(true);
+          else resolve(false);
+        }
+      );
+    } catch (error) {
       reject(error);
     }
   });
@@ -118,25 +159,18 @@ export const getChatList = (userId) =>
             msgCopy: "$messages",
           },
         },
-        // { $match: { "messages.isRead": false } },
         { $unwind: "$messages" },
         {
           $group: {
             _id: "$_id",
             message_id: { $first: "$message_id" },
             receiver: { $first: "$clients" },
-            unreadCount: { $sum: 1 },
             message: { $last: "$messages.text" },
             msgCopy: { $first: "$msgCopy" },
             createdAt: { $last: "$messages.createdAt" },
           },
         },
         { $unwind: "$msgCopy" },
-        // {
-        //   $match: {
-        //     "msgCopy.sender": { $ne: mongoose.Types.ObjectId(userId) },
-        //   },
-        // },
         {
           $group: {
             _id: "$_id",
@@ -148,7 +182,15 @@ export const getChatList = (userId) =>
               $sum: {
                 $cond: [
                   {
-                    $ne: ["$msgCopy.sender", mongoose.Types.ObjectId(userId)],
+                    $and: [
+                      {
+                        $ne: [
+                          "$msgCopy.sender",
+                          mongoose.Types.ObjectId(userId),
+                        ],
+                      },
+                      { $eq: ["$msgCopy.isRead", false] },
+                    ],
                   },
                   1,
                   0,
@@ -170,23 +212,12 @@ export const getChatList = (userId) =>
           $project: {
             _id: 0,
             userId: "$profile._id",
-            // message_id: 1,
-            // receiver: 1,
             message: 1,
             createdAt: 1,
             displayName: "$profile.displayName",
             unread: 1,
             online: "$profile.online",
-            // uuid: "$profile.uuid",
             avatar: "$profile.avatar",
-            // friends: "$profile.friends",
-            // unwind first
-            isFriends: {
-              $in: [
-                "$profile.friends.userId",
-                [mongoose.Types.ObjectId(userId)],
-              ],
-            },
           },
         },
         { $sort: { createdAt: -1 } },
@@ -196,22 +227,6 @@ export const getChatList = (userId) =>
       });
     } catch (error) {
       reject(error);
-    }
-  });
-export const exitChat = (userId) =>
-  new Promise((resolve, reject) => {
-    try {
-      User.findByIdAndUpdate(
-        userId,
-        { online: false },
-        { upsert: true, new: true },
-        (err, user) => {
-          if (err) return reject(err);
-          resolve(user);
-        }
-      );
-    } catch (err) {
-      reject(err);
     }
   });
 
@@ -284,10 +299,10 @@ export const getMessages = (sender, receiver) =>
             },
           },
         },
-        { $project: { _id: 0, messages: 1 } },
+        { $project: { messages: 1 } },
       ]).exec((err, res) => {
         if (err) return reject(err);
-        resolve(res?.[0]?.messages);
+        resolve(res?.[0]);
       });
     } catch (error) {
       reject(error);
@@ -295,12 +310,10 @@ export const getMessages = (sender, receiver) =>
   });
 
 export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
-  // console.log(userId, page, limit, choices, baseUser);
   const skip = ((page || 1) - 1) * limit;
   return new Promise((resolve, reject) => {
     const stage1 = {
       _id: { $not: { $in: baseUser.viewed } },
-      // function to find opposite gender
       "gender.value": choices.gender || baseUser.gender,
       "blocked.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
       "viewed.userId": { $not: { $in: [mongoose.Types.ObjectId(userId)] } },
@@ -469,12 +482,7 @@ export const getMatches = (userId) =>
           createdAt: 1,
           displayName: "$profile.displayName",
           online: "$profile.online",
-          uuid: "$profile.uuid",
           avatar: "$profile.avatar",
-          friends: "$profile.friends",
-          isFriends: {
-            $in: ["$profile.friends.userId", [mongoose.Types.ObjectId(userId)]],
-          },
         },
       },
     ]).exec((err, res) => {
@@ -536,40 +544,6 @@ export const like = ({ sent, senderId, receiverId }) => {
   });
 };
 
-export const setView = ({ userId, receiverId }) =>
-  new Promise((resolve, reject) => {
-    try {
-      User.updateOne(
-        {
-          _id: mongoose.Types.ObjectId(userId),
-          viewed: {
-            $not: {
-              $elemMatch: {
-                userId: mongoose.Types.ObjectId(receiverId),
-              },
-            },
-          },
-        },
-        {
-          $push: {
-            viewed: {
-              userId: receiverId,
-              createdAt: new Date(),
-            },
-          },
-        },
-        (err, res) => {
-          console.log(err);
-          if (err) return reject(err);
-          resolve();
-        }
-      );
-    } catch (error) {
-      console.log(error);
-      reject(error);
-    }
-  });
-
 export const getLikes = ({ userId }) =>
   new Promise((resolve, reject) => {
     try {
@@ -605,7 +579,7 @@ export const checkLike = ({ sent, senderId, receiverId }) => {
     ]).exec((err, res) => {
       console.log(err);
       if (err) return reject(err);
-      console.log(res);
+      // console.log(res);
       resolve(res[0]?.interaction.userId);
     });
   });
@@ -648,7 +622,7 @@ export const match = ({ senderId, receiverId }) =>
 export const changeUserOnline = ({ userId, changeToOnline }) => {
   let obj;
   if (changeToOnline) obj = { online: true };
-  else obj = { online: false };
+  else obj = { online: false, lastLogin: new Date() };
   return new Promise((resolve, reject) => {
     try {
       User.findByIdAndUpdate(
@@ -665,3 +639,280 @@ export const changeUserOnline = ({ userId, changeToOnline }) => {
     }
   });
 };
+
+export const makeMessageSeen = ({ _id, sender, createdAt }) =>
+  new Promise((resolve, reject) => {
+    try {
+      Message.updateMany(
+        {
+          _id: mongoose.Types.ObjectId(_id),
+          "messages.sender": mongoose.Types.ObjectId(sender),
+        },
+        { $set: { "messages.$[elem].isRead": true } },
+        {
+          arrayFilters: [{ "elem.createdAt": { $lte: new Date(createdAt) } }],
+          upsert: true,
+        },
+        (err, _) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (err) {
+      reject(err);
+    }
+  });
+
+export const addToArray = ({ userId, receiverId, type }) => {
+  let array;
+  if (type === BLOCKED) array = "blocked";
+  else if (type === VIEWED) array = "viewed";
+
+  const query = { _id: mongoose.Types.ObjectId(userId) };
+  const operation = {};
+  query[array] = {
+    $not: {
+      $elemMatch: {
+        userId: mongoose.Types.ObjectId(receiverId),
+      },
+    },
+  };
+  operation[array] = {
+    userId: receiverId,
+    createdAt: new Date(),
+  };
+
+  return new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        query,
+        {
+          $push: operation,
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+export const removeFromArray = ({ userId, removedId, type }) => {
+  let obj = {};
+  switch (type) {
+    case UNBLOCKED:
+      obj = {
+        blocked: { userId: mongoose.Types.ObjectId(removedId) },
+      };
+      break;
+    case DELETE_NOTIFICATION:
+      obj = {
+        notifications: { notificationId: removedId },
+      };
+      break;
+    case RELOAD_SENT:
+      obj = {
+        "interaction.sent": { userId: mongoose.Types.ObjectId(removedId) },
+      };
+      break;
+    case RELOAD_RECEIVED:
+      obj = {
+        "interaction.received": { userId: mongoose.Types.ObjectId(removedId) },
+      };
+      break;
+    default:
+      break;
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        { _id: mongoose.Types.ObjectId(userId) },
+        {
+          $pull: obj,
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+export const addToFriends = ({ userId, receiverId, status }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          friends: {
+            $not: {
+              $elemMatch: {
+                userId: mongoose.Types.ObjectId(receiverId),
+              },
+            },
+          },
+        },
+        {
+          $push: {
+            friends: {
+              userId: receiverId,
+              createdAt: new Date(),
+              status,
+            },
+          },
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const getFriends = (userId) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.aggregate([
+        { $match: { _id: mongoose.Types.ObjectId(userId) } },
+        { $unwind: { path: "$friends", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            _id: 0,
+            userId: "$friends.userId",
+            status: "$friends.status",
+          },
+        },
+      ]).exec((err, res) => {
+        console.log(err);
+        if (err) return reject(err);
+        console.log(res);
+        resolve(res);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const getBlocked = (userId) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.aggregate([
+        { $match: { _id: mongoose.Types.ObjectId(userId) } },
+        { $unwind: { path: "$blocked", preserveNullAndEmptyArrays: true } },
+        { $project: { _id: 0, userId: "$blocked.userId" } },
+      ]).exec((err, res) => {
+        console.log(err, "err2");
+        if (err) return reject(err);
+        console.log(res);
+        resolve(res);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const addToNotifications = ({
+  userId,
+  receiverId,
+  notificationType,
+}) => {
+  const obj = {
+    notificationId: uuidv4(),
+    userId: receiverId,
+    isRead: false,
+    notificationType,
+    createdAt: new Date(),
+  };
+  return new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          notifications: {
+            $not: {
+              $elemMatch: {
+                $and: [
+                  { userId: mongoose.Types.ObjectId(receiverId) },
+                  { notificationType },
+                ],
+              },
+            },
+          },
+        },
+        {
+          $push: { notifications: obj },
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(obj);
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      reject(error);
+    }
+  });
+};
+
+export const confirmFriendRequest = async ({ userId, receiverId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          "friends.userId": mongoose.Types.ObjectId(receiverId),
+        },
+        { $set: { "friends.$.status": "friends" } },
+        (err, _) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const declineFriendRequest = async ({ userId, receiverId }) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+        },
+        { $pull: { friends: { userId: mongoose.Types.ObjectId(receiverId) } } },
+        (err, _) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const markAsRead = (userId) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.updateMany(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          "notifications.isRead": false,
+        },
+        { $set: { "notifications.$.isRead": true } },
+        (err, res) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });

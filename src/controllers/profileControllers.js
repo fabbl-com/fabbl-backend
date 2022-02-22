@@ -71,8 +71,9 @@ export const updateSettings = async (req, res) => {
 // desc          update user profile Personal-data
 // @access  private
 
-export const updatePersonalData = async (req, res) => {
+export const updatePersonalData = async (req, res, next) => {
   const userId = req.params.id;
+  console.log(req.body, userId);
   const {
     usernameData,
     genderData,
@@ -85,20 +86,21 @@ export const updatePersonalData = async (req, res) => {
 
   try {
     const profileData = {
-      "profileData.displayName.value": usernameData,
-      "profileData.gender.value": genderData,
-      "profileData.headline.value": bioData,
-      "profileData.dob.value": ageData,
-      "profileData.location.value": locationData,
-      "profileData.relationshipStatus.value": relationshipStatusData,
-      "profileData.hobby.value": hobbiesData,
+      "displayName.value": usernameData,
+      "gender.value": genderData,
+      "headline.value": bioData,
+      "dob.value": ageData,
+      "location.value": locationData,
+      "relationshipStatus.value": relationshipStatusData,
+      "hobby.value": hobbiesData,
     };
 
     const profile = await User.findByIdAndUpdate(
       userId,
       { $set: profileData },
-      { new: true }
+      { new: true, upsert: true }
     ).select("-password");
+    if (!profile) return next(new ErrorMessage("Something went wrong...", 400));
     return res.status(200).json({ success: true, profile });
   } catch (err) {
     console.error(err);

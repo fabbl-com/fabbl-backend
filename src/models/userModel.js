@@ -28,41 +28,51 @@ const userSchema = mongoose.Schema(
       sent: [
         {
           userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-          createdAt: { type: Date, default: Date.now() },
+          createdAt: { type: Date, default: Date.now },
         },
       ],
       received: [
         {
           userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-          createdAt: { type: Date, default: Date.now() },
+          createdAt: { type: Date, default: Date.now },
         },
       ],
     },
     matches: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        createdAt: { type: Date, default: Date.now() },
+        createdAt: { type: Date, default: Date.now },
         _id: false,
       },
     ],
     friends: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        createdAt: { type: Date, default: Date.now() },
+        createdAt: { type: Date, default: Date.now },
+        status: String, // sent, received, friends
         _id: false,
       },
     ],
     blocked: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        createdAt: { type: Date, default: Date.now() },
+        createdAt: { type: Date, default: Date.now },
         _id: false,
       },
     ],
     viewed: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        createdAt: { type: Date, default: Date.now() },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    notifications: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        notificationId: String,
+        notificationType: String, // liked, matched, got-friend-request, confirmed-friend-request, blocked, unblocked,
+        isRead: { type: Boolean, default: false },
+        createdAt: { type: Date, default: Date.now },
       },
     ],
     headline: {
@@ -94,7 +104,7 @@ const userSchema = mongoose.Schema(
       theme: { type: Number, default: 1 }, // 1===dark, 0===light
       autoDelete: { type: Number, default: 10 }, // [10, 20, 15, 5]
     },
-    lastLogin: { type: Date, default: Date.now() },
+    lastLogin: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

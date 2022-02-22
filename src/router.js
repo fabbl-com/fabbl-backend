@@ -1,5 +1,6 @@
 import express from "express";
 import passport from "passport";
+import mongoose from "mongoose";
 import {
   login,
   register,
@@ -9,8 +10,9 @@ import {
   sendResetPasswordMail,
   checkAuth,
 } from "./controllers/userControllers.js";
-import { insertMessage } from "./utils/socket.io.js";
+// import { insertMessage } from "./utils/socket.io.js";
 // import { insertUser } from "./test/controllers.js";
+// import { makeMessageSeen } from "./test/controllers.js";
 import { isAuth, sendVerificationMail } from "./middlewares/auth.js";
 
 import {
@@ -19,6 +21,7 @@ import {
   updatePersonalData,
   imageUpload,
 } from "./controllers/profileControllers.js";
+import Message from "./models/messageModel.js";
 
 const router = express.Router();
 
@@ -63,20 +66,44 @@ router.get("/auth/check", checkAuth);
 
 // only for testing
 // router.post("/add-users", insertUser);
-router.post("/user/add-message", async (req, res, next) => {
-  try {
-    const message = {
-      sender: req.body.sender,
-      receiver: req.body.receiver,
-      text: req.body.text,
-      createdAt: req.body.createdAt,
-    };
-    const messages = await insertMessage(message);
-    res.send(messages);
-  } catch (error) {
-    next(error);
-  }
-});
+// router.post("/read", async (req, res) => {
+//   try {
+//     const result = await Message.updateMany(
+//       {
+//         _id: mongoose.Types.ObjectId("620d6d560fe08325a32c8b08"),
+//       },
+//       { $set: { "messages.$[elem].isRead": true } },
+//       {
+//         arrayFilters: [
+//           {
+//             "elem.createdAt": {
+//               $lte: new Date("2022-02-17T09:51:14.924+00:00"),
+//             },
+//           },
+//         ],
+//         upsert: true,
+//       }
+//       // { new: true, upsert: true }
+//     );
+//     res.send(result);
+//   } catch (err) {
+//     console.log(err);
+//   }
+// });
+// router.post("/user/add-message", async (req, res, next) => {
+//   try {
+//     const message = {
+//       sender: req.body.sender,
+//       receiver: req.body.receiver,
+//       text: req.body.text,
+//       createdAt: req.body.createdAt,
+//     };
+//     const messages = await insertMessage(message);
+//     res.send(messages);
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 router.post("/user/send-reset-password-email", sendResetPasswordMail);
 router.get("/user/send-verify-email/:id", isAuth, sendVerificationMail);
