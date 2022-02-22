@@ -160,13 +160,8 @@ export const verifyEmail = (req, res, next) => {
 // @access  private
 export const updatePassword = async (req, res, next) => {
   const userId = req.params.id;
-  const { oldPassword, newPassword, token } = req.body;
-  // if (token) {
-  //   const decoded = jwt.verify(
-  //     token,
-  //     process.env.EMAIL_VERIFICATION_TOKEN_SECERT
-  //   );
-  // }
+  const { oldPassword, newPassword } = req.body;
+
   console.log(userId, oldPassword, newPassword);
   try {
     const user = await User.findById(userId);
@@ -207,4 +202,33 @@ export const checkAuth = (req, res, next) => {
     return res.status(200).json({ success: true });
   }
   return next(new ErrorMessage("Access denied", 401));
+};
+
+// @route     post /user/change/password
+// desc         change user password
+// @access  private
+export const changePassword = async (req, res, next) => {
+  const { token, newPassword } = req.body;
+
+  console.log(token, newPassword);
+  if (!token) {
+    return next(new ErrorMessage("Incorrect credentails", 401));
+  }
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.EMAIL_VERIFICATION_TOKEN_SECERT
+    );
+    const { userId, email } = decoded;
+    const user = await User.findById(userId);
+    if (!user) return next(new ErrorMessage("User not found", 401));
+    user.password = newPassword;
+    user.save((err, doc) => {
+      if (err) return next(err);
+      return res.status(200).json({ success: true });
+    });
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
 };
