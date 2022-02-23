@@ -10,6 +10,7 @@ import {
   sendResetPasswordMail,
   getUserProfile,
   changePassword,
+  logout,
 } from "./controllers/userControllers.js";
 // import { insertMessage } from "./utils/socket.io.js";
 // import { insertUser } from "./test/controllers.js";
@@ -64,6 +65,7 @@ router.get(
 );
 
 router.get("/auth/check", isAuth, getUserProfile);
+router.post("/auth/logout", isAuth, logout);
 
 // only for testing
 // router.post("/add-users", insertUser);

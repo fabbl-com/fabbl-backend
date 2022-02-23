@@ -42,7 +42,7 @@ import {
   removeFromArray,
 } from "./utils/socket.io.js";
 
-const connectSocket = (io, session) => {
+const connectSocket = (io) => {
   io.use(async (socket, next) => {
     const { userId } = await socket.request._query;
     const [res1, res2] = await Promise.all([
@@ -55,7 +55,10 @@ const connectSocket = (io, session) => {
         socketID: socket.id,
       }),
     ]);
-    session(socket.request, {}, next);
+    if (res1 && res2) return next();
+    socket.broadcast.emit("connection-response", {
+      message: "Connection failed",
+    });
   });
   io.on("connection", async (socket) => {
     try {
@@ -136,7 +139,6 @@ const connectSocket = (io, session) => {
     });
 
     socket.on("chat-list", async (userId) => {
-      console.log(userId, "chat-list");
       try {
         const [onlyMatches, matchedAndMessaged, friends, blocked] =
           await Promise.all([
@@ -424,7 +426,6 @@ const connectSocket = (io, session) => {
     socket.on(
       "confirm-friends-request",
       async ({ sender, receiver, notificationId }) => {
-        console.log(sender, receiver, notificationId, "hello");
         try {
           const [
             isConfirmed1,
@@ -455,7 +456,6 @@ const connectSocket = (io, session) => {
               type: DELETE_NOTIFICATION,
             }),
           ]);
-          console.log(socketID);
           if (isConfirmed1 && isDeleted)
             io.to(socket.id).emit("friends-request-response", {
               success: true,

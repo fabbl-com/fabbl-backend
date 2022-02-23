@@ -35,7 +35,6 @@ export const getNotifications = (userId) =>
         },
       ]).exec((err, res) => {
         if (err) return reject(err);
-        console.log(res);
         resolve(res);
       });
     } catch (error) {
@@ -63,6 +62,7 @@ export const getProfile = (userId) =>
             location: 1,
             settings: 1,
             lastLogin: 1,
+            isProfileCompleted: 1,
           },
         },
       ]).exec((err, res) => {
