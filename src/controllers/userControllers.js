@@ -64,7 +64,7 @@ export const sendResetPasswordMail = async (req, res, next) => {
         if (err) return next(err);
 
         const URL = `${process.env.CLIENT_URL}/user/reset-password/?token=${passwordResetToken}`;
-
+        console.log(URL);
         try {
           const result = await sendMail(email, URL, "reset");
           if (!result)
@@ -104,7 +104,6 @@ export const sendUpdateEmail = async (req, res, next) => {
     const user = await User.findOne({ email }).select("_id");
     if (user)
       return next(new ErrorMessage("Email is already registered...", 403));
-
     jwt.sign(
       { userId, email },
       process.env.EMAIL_VERIFICATION_TOKEN_SECERT,
@@ -212,8 +211,7 @@ export const getUserProfile = async (req, res, next) => {
 // @access  private
 export const changePassword = async (req, res, next) => {
   const { token, newPassword } = req.body;
-
-  console.log(token, newPassword);
+  // console.log(token, newPassword);
   if (!token) {
     return next(new ErrorMessage("Incorrect credentails", 401));
   }
@@ -224,7 +222,10 @@ export const changePassword = async (req, res, next) => {
     );
     const { userId, email } = decoded;
     const user = await User.findById(userId);
-    if (!user) return next(new ErrorMessage("User not found", 401));
+    if (!user) {
+      // console.log("no token");
+      return next(new ErrorMessage("User not found", 401));
+    }
     user.password = newPassword;
     user.save((err, doc) => {
       if (err) return next(err);
