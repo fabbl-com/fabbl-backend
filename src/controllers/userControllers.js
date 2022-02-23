@@ -1,8 +1,5 @@
 import passport from "passport";
 import jwt from "jsonwebtoken";
-import util from "util";
-import mongoose from "mongoose";
-import Message from "../models/messageModel.js";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
@@ -13,9 +10,13 @@ export const register = (req, res, next) => {
     console.log(err, user, info);
     if (err) return next(err);
     if (info && !info.success) return res.status(401).json(info);
-    req.login(user, (err) => {
+    req.login(user, async (err) => {
       if (err) return next(err);
-      next();
+      const [notifications, profile] = await Promise.all([
+        getNotifications(user),
+        getProfile(user),
+      ]);
+      return res.status(200).json({ success: true, notifications, profile });
     });
   })(req, res, next);
 };
@@ -29,17 +30,18 @@ export const login = (req, res, next) => {
         success: false,
         message: "Invalid credentials.",
       });
-    req.login(user, (err) => {
+    req.login(user, async (err) => {
       if (err) return next(err);
       if (req.body.rememberMe) {
         req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
       } else {
         req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
       }
-      return res.status(200).json({
-        success: true,
-        userId: user,
-      });
+      const [notifications, profile] = await Promise.all([
+        getNotifications(user),
+        getProfile(user),
+      ]);
+      return res.status(200).json({ success: true, notifications, profile });
     });
   })(req, res, next);
 };
@@ -234,4 +236,13 @@ export const changePassword = async (req, res, next) => {
     console.error(err);
     next(err);
   }
+};
+
+export const logout = (req, res, next) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return next(err);
+    }
+    return res.status(200).json({ success: true, isLoggedOut: true });
+  });
 };

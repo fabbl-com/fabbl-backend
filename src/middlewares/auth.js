@@ -4,7 +4,6 @@ import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
 
 export const sendVerificationMail = async (req, res, next) => {
-  console.log("users", req.user);
   const userId = req.params.id;
 
   try {
@@ -20,7 +19,6 @@ export const sendVerificationMail = async (req, res, next) => {
       // { algorithm: "RS256" },
       { expiresIn: "30d" },
       async (err, emailVerificationToken) => {
-        console.log(err, emailVerificationToken);
         if (err) return next(err);
 
         const activationURL = `${process.env.CLIENT_URL}/user/verify-email/?token=${emailVerificationToken}`;
@@ -56,6 +54,6 @@ export const sendVerificationMail = async (req, res, next) => {
 };
 
 export const isAuth = (req, res, next) => {
-  if (req.session.user) return next();
+  if (req?.session?.user) return next();
   return next(new ErrorMessage("Access denied...", 401));
 };

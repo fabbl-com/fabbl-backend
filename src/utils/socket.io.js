@@ -243,7 +243,6 @@ export const insertMessage = (message) => {
         (err, doc) => {
           if (err) return reject(err);
           if (doc && doc.length > 0) {
-            console.log(doc);
             Message.findOneAndUpdate(
               {
                 message_id: {
@@ -263,7 +262,6 @@ export const insertMessage = (message) => {
               message_id: `${sender}_${receiver}`,
               messages: message,
             }).save((err, doc) => {
-              console.log(doc);
               if (err) return reject(err);
               resolve(doc);
             });
@@ -790,12 +788,11 @@ export const getFriends = (userId) =>
           },
         },
       ]).exec((err, res) => {
-        console.log(err);
         if (err) return reject(err);
-        console.log(res);
         resolve(res);
       });
     } catch (error) {
+      console.log(error);
       reject(error);
     }
   });
@@ -810,7 +807,6 @@ export const getBlocked = (userId) =>
       ]).exec((err, res) => {
         console.log(err, "err2");
         if (err) return reject(err);
-        console.log(res);
         resolve(res);
       });
     } catch (error) {

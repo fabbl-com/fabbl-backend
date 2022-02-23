@@ -15,7 +15,6 @@ export const localRegisterStrategy = new LocalStrategy(
     const { displayName, avatar } = req.body;
     User.findOne({ email }, (err, user) => {
       if (err) return next(err);
-      console.log(user);
       if (user)
         return next(null, false, {
           success: false,
@@ -48,9 +47,7 @@ export const localLoginStrategy = new LocalStrategy(
     passReqToCallback: true,
   },
   (req, email, password, next) => {
-    console.log(email, password);
     User.findOne({ email }, (err, user) => {
-      console.log(user);
       if (err) return next(err);
       if (!user)
         return next(null, false, {
@@ -65,6 +62,7 @@ export const localLoginStrategy = new LocalStrategy(
           });
 
         const sessUser = { id: user.id, email: user.email };
+
         req.session.user = sessUser;
         next(null, user.id);
       });
