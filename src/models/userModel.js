@@ -104,6 +104,7 @@ const userSchema = mongoose.Schema(
       theme: { type: Number, default: 1 }, // 1===dark, 0===light
       autoDelete: { type: Number, default: 10 }, // [10, 20, 15, 5]
     },
+    publicKey: String,
     lastLogin: { type: Date, default: Date.now },
   },
   { timestamps: true }

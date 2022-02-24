@@ -73,3 +73,26 @@ export const getProfile = (userId) =>
       reject(error);
     }
   });
+
+export const updatePublicKey = ({ userId, publicKey }) =>
+  new Promise((resolve, reject) => {
+    if (!publicKey) {
+      resolve(false);
+      return;
+    }
+    console.log(publicKey, "ehy");
+    try {
+      User.findByIdAndUpdate(
+        userId,
+        { $set: { publicKey: JSON.stringify(publicKey) } },
+        { $upsert: true },
+        (err, doc) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      reject(error);
+    }
+  });
