@@ -9,6 +9,7 @@ import {
   verifyEmail,
   sendResetPasswordMail,
   getUserProfile,
+  changePassword,
   logout,
 } from "./controllers/userControllers.js";
 // import { insertMessage } from "./utils/socket.io.js";
@@ -115,6 +116,7 @@ router.get("/user/profile/:id", isAuth, currentUserProfile);
 router.post("/user/profile/:id", isAuth, updateSettings);
 router.post("/user/profile/personal/:id", isAuth, updatePersonalData);
 router.post("/user/update-password/:id", isAuth, updatePassword);
+router.post("/user/change-password", changePassword);
 
 router.post("/user/upload/image/:id", imageUpload);
 
