@@ -126,8 +126,8 @@ export const imageUpload = async (req, res) => {
     api_secret: keys.cloudinary.api_secret,
   });
   const userId = req.params.id;
+  console.log(req.files);
   const imageFile = req.files.data;
-  console.log(req.files.data);
   try {
     const uploadResponse = await cloudinary.v2.uploader.upload(
       imageFile.tempFilePath,
