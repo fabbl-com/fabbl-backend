@@ -78,26 +78,9 @@ export const getUserInfo = ({ userId, type }) => {
 export const getReceiverInfo = ({ senderId, receiverId }) =>
   new Promise((resolve, reject) => {
     try {
+      console.log(senderId, receiverId);
       User.aggregate([
         { $match: { _id: mongoose.Types.ObjectId(receiverId) } },
-        {
-          $project: {
-            avatar: 1,
-            online: 1,
-            lastLogin: 1,
-            displayName: 1,
-            matches: 1,
-          },
-        },
-        {
-          $project: {
-            avatar: 1,
-            online: 1,
-            displayName: 1,
-            lastLogin: 1,
-            matches: 1,
-          },
-        },
         {
           $unwind: {
             path: "$matches",
@@ -112,6 +95,7 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
             displayName: 1,
             lastLogin: 1,
             online: 1,
+            publicKey: 1,
           },
         },
       ]).exec((err, res) => {
@@ -218,6 +202,7 @@ export const getChatList = (userId) =>
             unread: 1,
             online: "$profile.online",
             avatar: "$profile.avatar",
+            publicKey: "$profile.publicKey",
           },
         },
         { $sort: { createdAt: -1 } },
@@ -629,7 +614,7 @@ export const changeUserOnline = ({ userId, changeToOnline }) => {
         { new: true },
         (err, user) => {
           if (err) reject(err);
-          resolve(user.id);
+          resolve(user?.id);
         }
       );
     } catch (err) {

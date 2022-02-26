@@ -3,7 +3,11 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
-import { getNotifications, getProfile } from "./helpers/index.js";
+import {
+  getNotifications,
+  getProfile,
+  updatePublicKey,
+} from "./helpers/index.js";
 
 export const register = (req, res, next) => {
   passport.authenticate("local.register", (err, user, info) => {
@@ -197,12 +201,17 @@ export const updatePassword = async (req, res, next) => {
 
 export const getUserProfile = async (req, res, next) => {
   const userId = req.session.user.id;
+  const publicKey = req.body?.publicKey;
+  console.log(publicKey);
   try {
-    const [notifications, profile] = await Promise.all([
+    const [notifications, profile, isPublicKeyUpdated] = await Promise.all([
       getNotifications(userId),
       getProfile(userId),
+      updatePublicKey({ userId, publicKey }),
     ]);
-    return res.status(200).json({ success: true, notifications, profile });
+    return res
+      .status(200)
+      .json({ success: true, notifications, profile, isPublicKeyUpdated });
   } catch (error) {
     return next(error);
   }

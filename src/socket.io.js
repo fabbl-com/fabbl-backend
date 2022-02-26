@@ -112,7 +112,7 @@ const connectSocket = (io) => {
     });
 
     socket.on("get-user-messages", async ({ sender, receiver }) => {
-      // console.log(sender, receiver);
+      console.log(sender, receiver);
       try {
         const [messages, user, isBlockedBy] = await Promise.all([
           getMessages(sender, receiver),
