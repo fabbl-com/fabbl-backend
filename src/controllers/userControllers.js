@@ -1,11 +1,17 @@
 import passport from "passport";
 import jwt from "jsonwebtoken";
+import { validationResult } from "express-validator";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
 import { getNotifications, getProfile, updateKeys } from "./helpers/index.js";
 
 export const register = (req, res, next) => {
+  // Finds the validation errors in this request and wraps them in an object with handy functions
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   passport.authenticate("local.register", (err, user, info) => {
     console.log(err, user, info);
     if (err) return next(err);
@@ -47,6 +53,10 @@ export const login = (req, res, next) => {
 };
 
 export const sendResetPasswordMail = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   console.log("users", req.user);
   const { email } = req.body;
   try {
@@ -99,6 +109,10 @@ export const sendResetPasswordMail = async (req, res, next) => {
 // @access  private
 
 export const sendUpdateEmail = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   const userId = req.params.id;
   const { email } = req.body;
 
@@ -168,6 +182,10 @@ export const verifyEmail = (req, res, next) => {
 // desc         Update user password
 // @access  private
 export const updatePassword = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   const userId = req.params.id;
   const { oldPassword, newPassword } = req.body;
 
