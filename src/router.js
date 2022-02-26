@@ -64,7 +64,7 @@ router.get(
   }
 );
 
-router.get("/auth/check", isAuth, getUserProfile);
+router.post("/auth/check", isAuth, getUserProfile);
 router.post("/auth/logout", isAuth, logout);
 
 // only for testing

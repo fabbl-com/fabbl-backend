@@ -105,6 +105,7 @@ const userSchema = mongoose.Schema(
       autoDelete: { type: Number, default: 10 }, // [10, 20, 15, 5]
     },
     lastLogin: { type: Date, default: Date.now },
+    isProfileCompleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
