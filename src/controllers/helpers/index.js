@@ -63,6 +63,8 @@ export const getProfile = (userId) =>
             settings: 1,
             lastLogin: 1,
             isProfileCompleted: 1,
+            privateKey: 1,
+            publicKey: 1,
           },
         },
       ]).exec((err, res) => {
@@ -74,17 +76,36 @@ export const getProfile = (userId) =>
     }
   });
 
-export const updatePublicKey = ({ userId, publicKey }) =>
+export const updateKeys = ({ userId, publicKey, privateKey }) =>
   new Promise((resolve, reject) => {
-    if (!publicKey) {
+    if (!publicKey && !privateKey) {
       resolve(false);
       return;
     }
     console.log(publicKey, "ehy");
     try {
-      User.findByIdAndUpdate(
-        userId,
-        { $set: { publicKey: JSON.stringify(publicKey) } },
+      User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          $and: [
+            {
+              publicKey: {
+                $exists: false,
+              },
+            },
+            {
+              privateKey: {
+                $exists: false,
+              },
+            },
+          ],
+        },
+        {
+          $set: {
+            publicKey: JSON.stringify(publicKey),
+            privateKey: JSON.stringify(privateKey),
+          },
+        },
         { $upsert: true },
         (err, doc) => {
           if (err) return reject(err);
