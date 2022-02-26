@@ -96,6 +96,7 @@ export const getReceiverInfo = ({ senderId, receiverId }) =>
             lastLogin: 1,
             online: 1,
             publicKey: 1,
+            privateKey: 1,
           },
         },
       ]).exec((err, res) => {
@@ -203,6 +204,7 @@ export const getChatList = (userId) =>
             online: "$profile.online",
             avatar: "$profile.avatar",
             publicKey: "$profile.publicKey",
+            privateKey: "$profile.privateKey",
           },
         },
         { $sort: { createdAt: -1 } },
