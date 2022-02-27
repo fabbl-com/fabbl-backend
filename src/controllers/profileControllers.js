@@ -100,6 +100,7 @@ export const updatePersonalData = async (req, res, next) => {
       "location.value": locationData,
       "relationshipStatus.value": relationshipStatusData,
       "hobby.value": hobbiesData,
+      isProfileCompleted: true,
     };
 
     User.findByIdAndUpdate(
