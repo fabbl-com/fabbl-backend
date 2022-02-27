@@ -73,7 +73,6 @@ const connectSocket = (io) => {
       console.log(error);
     }
     socket.on("send-message", async (message) => {
-      // console.log(message);
       if (!message.text) {
         io.to(socket.id).emit("send-message-response", {
           success: false,
@@ -111,11 +110,11 @@ const connectSocket = (io) => {
       }
     });
 
-    socket.on("get-user-messages", async ({ sender, receiver }) => {
+    socket.on("get-user-messages", async ({ sender, receiver, size, page }) => {
       console.log(sender, receiver);
       try {
         const [messages, user, isBlockedBy] = await Promise.all([
-          getMessages(sender, receiver),
+          getMessages({ sender, receiver, size, page }),
           getReceiverInfo({
             senderId: sender,
             receiverId: receiver,
@@ -131,6 +130,7 @@ const connectSocket = (io) => {
         });
         // console.log(messages);
       } catch (error) {
+        console.log(error);
         io.to(socket.id).emit("get-user-messages-response", {
           success: false,
           messages: [],

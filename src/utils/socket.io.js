@@ -273,8 +273,9 @@ export const addSocketID = async ({ userId, socketID }) =>
     }
   });
 
-export const getMessages = (sender, receiver) =>
-  new Promise((resolve, reject) => {
+export const getMessages = ({ sender, receiver, size, page }) => {
+  const skip = ((page || 1) - 1) * size;
+  return new Promise((resolve, reject) => {
     try {
       Message.aggregate([
         {
@@ -285,15 +286,34 @@ export const getMessages = (sender, receiver) =>
           },
         },
         { $project: { messages: 1 } },
+        { $unwind: { path: "$messages", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            _id: "$messages._id",
+            text: "$messages.text",
+            sender: "$messages.sender",
+            receiver: "$messages.receiver",
+            isRead: "$messages.isRead",
+            createdAt: "$messages.createdAt",
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: size }],
+          },
+        },
       ]).exec((err, res) => {
         if (err) return reject(err);
-        resolve(res?.[0]);
+        resolve(res?.[0]?.data);
       });
     } catch (error) {
       reject(error);
     }
   });
-
+};
 export const getRandomUsers = (userId, page, limit, choices, baseUser) => {
   const skip = ((page || 1) - 1) * limit;
   return new Promise((resolve, reject) => {
@@ -792,7 +812,6 @@ export const getBlocked = (userId) =>
         { $unwind: { path: "$blocked", preserveNullAndEmptyArrays: true } },
         { $project: { _id: 0, userId: "$blocked.userId" } },
       ]).exec((err, res) => {
-        console.log(err, "err2");
         if (err) return reject(err);
         resolve(res);
       });
