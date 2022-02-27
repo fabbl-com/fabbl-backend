@@ -107,6 +107,7 @@ const userSchema = mongoose.Schema(
     publicKey: String,
     privateKey: String,
     lastLogin: { type: Date, default: Date.now },
+    isProfileCompleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

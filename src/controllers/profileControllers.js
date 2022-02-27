@@ -1,4 +1,5 @@
 import cloudinary from "cloudinary";
+import { validationResult } from "express-validator";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import keys from "../config/keys.js";
@@ -73,6 +74,11 @@ export const updateSettings = async (req, res) => {
 // @access  private
 
 export const updatePersonalData = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    return res.status(400).json({ errors: errors.array() });
+  }
   const userId = req.params.id;
   console.log(req.body, userId);
   const {
@@ -94,6 +100,7 @@ export const updatePersonalData = async (req, res, next) => {
       "location.value": locationData,
       "relationshipStatus.value": relationshipStatusData,
       "hobby.value": hobbiesData,
+      isProfileCompleted: true,
     };
 
     User.findByIdAndUpdate(

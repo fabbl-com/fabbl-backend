@@ -16,6 +16,7 @@ import {
 // import { insertUser } from "./test/controllers.js";
 // import { makeMessageSeen } from "./test/controllers.js";
 import { isAuth, sendVerificationMail } from "./middlewares/auth.js";
+import { check } from "express-validator";
 
 import {
   currentUserProfile,
@@ -31,7 +32,13 @@ const router = express.Router();
 router.get("/", (req, res) => res.send("<h1>Hello from server</h1>"));
 
 // Auth Routes
-router.post("/auth/register", register, sendVerificationMail);
+router.post(
+  "/auth/register",
+  check("email", "enter valid email").isEmail(),
+  check("password", "password is require").exists(),
+  register,
+  sendVerificationMail
+);
 
 router.post("/auth/login", login);
 
@@ -108,14 +115,38 @@ router.post("/auth/logout", isAuth, logout);
 //   }
 // });
 
-router.post("/user/send-reset-password-email", sendResetPasswordMail);
+router.post(
+  "/user/send-reset-password-email",
+  check("email", "enter valid email").isEmail(),
+  sendResetPasswordMail
+);
 router.get("/user/send-verify-email/:id", isAuth, sendVerificationMail);
-router.post("/user/send-update-email/:id", isAuth, sendUpdateEmail);
+router.post(
+  "/user/send-update-email/:id",
+  check("email", "enter valid email").isEmail(),
+  isAuth,
+  sendUpdateEmail
+);
 router.get("/user/verify-email/:token", isAuth, verifyEmail);
 router.get("/user/profile/:id", isAuth, currentUserProfile);
 router.post("/user/profile/:id", isAuth, updateSettings);
-router.post("/user/profile/personal/:id", isAuth, updatePersonalData);
-router.post("/user/update-password/:id", isAuth, updatePassword);
+router.post(
+  "/user/profile/personal/:id",
+  check("hobbiesData", "hobbies required").not().isEmpty(),
+  check("usernameData", "userName require").not().isEmpty(),
+  // check("genderData", "Gender require").not().isEmpty(),
+  check("relationshipStatusData", "RelationshipStatus require").not().isEmpty(),
+  check("bioData", "Bio require").not().isEmpty(),
+  isAuth,
+  updatePersonalData
+);
+router.post(
+  "/user/update-password/:id",
+  check("oldPassword", "password is require").exists(),
+  check("newPassword", "password is require").exists(),
+  isAuth,
+  updatePassword
+);
 router.post("/user/change-password", changePassword);
 
 router.post("/user/upload/image/:id", imageUpload);
