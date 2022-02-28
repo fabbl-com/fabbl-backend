@@ -652,7 +652,7 @@ export const makeMessageSeen = ({ _id, sender, createdAt }) =>
     try {
       Message.updateMany(
         {
-          _id: mongoose.Types.ObjectId(_id),
+          message_id: _id,
           "messages.sender": mongoose.Types.ObjectId(sender),
         },
         { $set: { "messages.$[elem].isRead": true } },

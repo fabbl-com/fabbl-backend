@@ -91,15 +91,18 @@ const connectSocket = (io) => {
       } else {
         try {
           // check if blocked
-          const [receiverSocketID, _] = await Promise.all([
+          const [receiverSocketID, messages] = await Promise.all([
             getUserInfo({
               userId: message.receiver,
               type: GET_SOCKET_ID,
             }),
             insertMessage(message),
           ]);
-          // console.log(receiverSocketID);
-          io.to(receiverSocketID).emit("send-message-response", message);
+          console.log(messages);
+          io.to(receiverSocketID).emit("send-message-response", {
+            ...message,
+            messsage_id: messages.message_id,
+          });
         } catch (error) {
           console.log(error);
           io.to(socket.id).emit("send-message-response", {
@@ -350,7 +353,7 @@ const connectSocket = (io) => {
 
     socket.on("read", async ({ _id, createdAt, sender }) => {
       try {
-        // console.log(_id, createdAt, sender, "read");
+        console.log(_id, createdAt, sender, "read");
         const [isRead, socketId] = await Promise.all([
           makeMessageSeen({ _id, sender, createdAt }),
           getUserInfo({
