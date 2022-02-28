@@ -1,4 +1,10 @@
 import mongoose from "mongoose";
+import {
+  DELETE_FROM_FRIENDS,
+  DELETE_FROM_LIKE_RECEIVED,
+  DELETE_FROM_LIKE_SENT,
+  DELETE_FROM_MATCHES,
+} from "../../constants/index.js";
 import User from "../../models/userModel.js";
 
 export const getNotifications = (userId) =>
@@ -65,6 +71,7 @@ export const getProfile = (userId) =>
             isProfileCompleted: 1,
             privateKey: 1,
             publicKey: 1,
+            createdAt: 1,
           },
         },
       ]).exec((err, res) => {
@@ -117,3 +124,59 @@ export const updateKeys = ({ userId, publicKey, privateKey }) =>
       reject(error);
     }
   });
+
+export const deleteUser = (id) =>
+  new Promise((resolve, reject) => {
+    try {
+      User.deleteOne({ _id: mongoose.Types.ObjectId(id) }, (err, doc) => {
+        if (err) return reject(err);
+        resolve(true);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const removeFromArray = ({ id, type }) => {
+  let obj = {};
+  switch (type) {
+    case DELETE_FROM_FRIENDS:
+      obj = {
+        friends: { userId: mongoose.Types.ObjectId(id) },
+      };
+      break;
+    case DELETE_FROM_MATCHES:
+      obj = {
+        matches: { userId: mongoose.Types.ObjectId(id) },
+      };
+      break;
+    case DELETE_FROM_LIKE_SENT:
+      obj = {
+        "interaction.received": { userId: mongoose.Types.ObjectId(id) },
+      };
+      break;
+    case DELETE_FROM_LIKE_RECEIVED:
+      obj = {
+        "interaction.sent": { userId: mongoose.Types.ObjectId(id) },
+      };
+      break;
+    default:
+      break;
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      User.updateMany(
+        {},
+        {
+          $pull: obj,
+        },
+        (err, doc) => {
+          if (err) return reject(err);
+          resolve(true);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+};

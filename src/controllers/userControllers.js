@@ -4,7 +4,19 @@ import { validationResult } from "express-validator";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
-import { getNotifications, getProfile, updateKeys } from "./helpers/index.js";
+import {
+  deleteUser,
+  getNotifications,
+  getProfile,
+  removeFromArray,
+  updateKeys,
+} from "./helpers/index.js";
+import {
+  DELETE_FROM_FRIENDS,
+  DELETE_FROM_LIKE_RECEIVED,
+  DELETE_FROM_LIKE_SENT,
+  DELETE_FROM_MATCHES,
+} from "../constants/index.js";
 
 export const register = (req, res, next) => {
   // Finds the validation errors in this request and wraps them in an object with handy functions
@@ -270,4 +282,23 @@ export const logout = (req, res, next) => {
     }
     return res.status(200).json({ success: true, isLoggedOut: true });
   });
+};
+
+export const deleteAccount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await Promise.all([
+      deleteUser(id),
+      removeFromArray({ id, type: DELETE_FROM_FRIENDS }),
+      removeFromArray({ id, type: DELETE_FROM_MATCHES }),
+      removeFromArray({ id, type: DELETE_FROM_LIKE_SENT }),
+      removeFromArray({ id, type: DELETE_FROM_LIKE_RECEIVED }),
+    ]);
+    if (result[0] && result[1] && result[2] && result[3] && result[4])
+      res
+        .status(200)
+        .json({ success: true, message: "Account deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
 };

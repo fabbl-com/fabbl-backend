@@ -12,6 +12,7 @@ import {
   getUserProfile,
   changePassword,
   logout,
+  deleteAccount,
 } from "./controllers/userControllers.js";
 // import { insertMessage } from "./utils/socket.io.js";
 // import { insertUser } from "./test/controllers.js";
@@ -131,6 +132,7 @@ router.post(
 router.get("/user/verify-email/:token", isAuth, verifyEmail);
 router.get("/user/profile/:id", isAuth, currentUserProfile);
 router.post("/user/profile/:id", isAuth, updateSettings);
+router.delete("/user/delete/:id", isAuth, deleteAccount);
 router.post(
   "/user/profile/personal/:id",
   check("hobbiesData", "hobbies required").not().isEmpty(),
