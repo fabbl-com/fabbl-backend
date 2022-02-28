@@ -101,7 +101,7 @@ const connectSocket = (io) => {
           console.log(messages);
           io.to(receiverSocketID).emit("send-message-response", {
             ...message,
-            messsage_id: messages.message_id,
+            message_id: messages.message_id,
           });
         } catch (error) {
           console.log(error);
