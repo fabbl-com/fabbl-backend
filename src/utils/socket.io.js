@@ -285,11 +285,12 @@ export const getMessages = ({ sender, receiver, size, page }) => {
             },
           },
         },
-        { $project: { messages: 1 } },
+        { $project: { messages: 1, message_id: 1 } },
         { $unwind: { path: "$messages", preserveNullAndEmptyArrays: true } },
         {
           $project: {
             _id: "$messages._id",
+            messageId: "$message_id",
             text: "$messages.text",
             sender: "$messages.sender",
             receiver: "$messages.receiver",
@@ -307,6 +308,7 @@ export const getMessages = ({ sender, receiver, size, page }) => {
         },
       ]).exec((err, res) => {
         if (err) return reject(err);
+        console.log(res?.[0]);
         resolve(res?.[0]?.data);
       });
     } catch (error) {

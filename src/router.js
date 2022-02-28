@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "passport";
 import mongoose from "mongoose";
+import { check } from "express-validator";
 import {
   login,
   register,
@@ -16,7 +17,6 @@ import {
 // import { insertUser } from "./test/controllers.js";
 // import { makeMessageSeen } from "./test/controllers.js";
 import { isAuth, sendVerificationMail } from "./middlewares/auth.js";
-import { check } from "express-validator";
 
 import {
   currentUserProfile,
@@ -25,6 +25,7 @@ import {
   imageUpload,
 } from "./controllers/profileControllers.js";
 import Message from "./models/messageModel.js";
+import { deleteMessage } from "./controllers/messageControllers.js";
 
 const router = express.Router();
 
@@ -150,5 +151,7 @@ router.post(
 router.post("/user/change-password", changePassword);
 
 router.post("/user/upload/image/:id", imageUpload);
+
+router.delete("/delete-message/:id", deleteMessage);
 
 export default router;
