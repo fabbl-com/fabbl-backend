@@ -43,7 +43,7 @@ const configureExpress = (app) => {
   app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
-  app.use(cors());
+  app.use(cors({ origin: "*", credentials: true }));
   app.use("/", router);
   app.use(handleError);
 
