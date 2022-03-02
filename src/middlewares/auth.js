@@ -54,6 +54,6 @@ export const sendVerificationMail = async (req, res, next) => {
 };
 
 export const isAuth = (req, res, next) => {
-  if (req?.session?.user) return next();
+  if (req.isAuthenticated()) return next();
   return next(new ErrorMessage("Access denied...", 401));
 };

@@ -1,7 +1,8 @@
 import express from "express";
 import passport from "passport";
-import mongoose from "mongoose";
 import { check } from "express-validator";
+
+// project imports
 import {
   login,
   register,
@@ -14,18 +15,14 @@ import {
   logout,
   deleteAccount,
 } from "./controllers/userControllers.js";
-// import { insertMessage } from "./utils/socket.io.js";
 // import { insertUser } from "./test/controllers.js";
-// import { makeMessageSeen } from "./test/controllers.js";
 import { isAuth, sendVerificationMail } from "./middlewares/auth.js";
-
 import {
   currentUserProfile,
   updateSettings,
   updatePersonalData,
   imageUpload,
 } from "./controllers/profileControllers.js";
-import Message from "./models/messageModel.js";
 import { deleteMessage } from "./controllers/messageControllers.js";
 
 const router = express.Router();
@@ -78,44 +75,6 @@ router.post("/auth/logout", isAuth, logout);
 
 // only for testing
 // router.post("/add-users", insertUser);
-// router.post("/read", async (req, res) => {
-//   try {
-//     const result = await Message.updateMany(
-//       {
-//         _id: mongoose.Types.ObjectId("620d6d560fe08325a32c8b08"),
-//       },
-//       { $set: { "messages.$[elem].isRead": true } },
-//       {
-//         arrayFilters: [
-//           {
-//             "elem.createdAt": {
-//               $lte: new Date("2022-02-17T09:51:14.924+00:00"),
-//             },
-//           },
-//         ],
-//         upsert: true,
-//       }
-//       // { new: true, upsert: true }
-//     );
-//     res.send(result);
-//   } catch (err) {
-//     console.log(err);
-//   }
-// });
-// router.post("/user/add-message", async (req, res, next) => {
-//   try {
-//     const message = {
-//       sender: req.body.sender,
-//       receiver: req.body.receiver,
-//       text: req.body.text,
-//       createdAt: req.body.createdAt,
-//     };
-//     const messages = await insertMessage(message);
-//     res.send(messages);
-//   } catch (error) {
-//     next(error);
-//   }
-// });
 
 router.post(
   "/user/send-reset-password-email",
@@ -130,6 +89,8 @@ router.post(
   sendUpdateEmail
 );
 router.get("/user/verify-email/:token", isAuth, verifyEmail);
+
+// profile routes
 router.get("/user/profile/:id", isAuth, currentUserProfile);
 router.post("/user/profile/:id", isAuth, updateSettings);
 router.delete("/user/delete/:id", isAuth, deleteAccount);

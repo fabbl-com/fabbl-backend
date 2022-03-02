@@ -2,10 +2,10 @@ import express from "express";
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
-import handleError from "./middlewares/error.js";
+
+// project imports
 import configureExpress from "./config/appConfig.js";
-import router from "./router.js";
-import connectSocket from "./socket.io.js";
+import connectSocket from "./config/socketConfig.js";
 
 dotenv.config();
 const app = express();
@@ -20,20 +20,13 @@ const io = new Server(server, {
 configureExpress(app);
 connectSocket(io);
 
-// Routes
-app.use("/", router);
-app.use(handleError);
-
 // Run the server
-let PORT;
-if (process.env.NODE_ENV === "production") PORT = process.env.PORT;
-else PORT = process.env.DEV_PORT;
-
+const PORT = process.env.PORT || 4000;
 server.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
 
-server.on("unhandledRejection", (err, promise) => {
+server.on("unhandledRejection", (err) => {
   console.log(`Error: ${err}`);
   server.close(() => server.exit(1));
 });

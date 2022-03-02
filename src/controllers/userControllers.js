@@ -229,7 +229,6 @@ export const getUserProfile = async (req, res, next) => {
   const userId = req.session.user.id;
   const publicKey = req.body?.publicKey;
   const privateKey = req.body?.privateKey;
-  console.log(publicKey);
   try {
     const [notifications, profile, isKeysUpdated] = await Promise.all([
       getNotifications(userId),

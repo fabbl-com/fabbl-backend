@@ -1,7 +1,6 @@
 import passportLocal from "passport-local";
 import gravatar from "gravatar";
 import User from "../../models/userModel.js";
-import { changeUserOnline } from "../../utils/socket.io.js";
 
 const LocalStrategy = passportLocal.Strategy;
 

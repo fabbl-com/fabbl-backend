@@ -85,11 +85,10 @@ export const getProfile = (userId) =>
 
 export const updateKeys = ({ userId, publicKey, privateKey }) =>
   new Promise((resolve, reject) => {
-    if (!publicKey && !privateKey) {
+    if (!publicKey || !privateKey) {
       resolve(false);
       return;
     }
-    console.log(publicKey, "ehy");
     try {
       User.updateOne(
         {
@@ -115,8 +114,9 @@ export const updateKeys = ({ userId, publicKey, privateKey }) =>
         },
         { $upsert: true },
         (err, doc) => {
+          console.log(doc);
           if (err) return reject(err);
-          resolve(true);
+          resolve(doc.modifiedCount);
         }
       );
     } catch (error) {
