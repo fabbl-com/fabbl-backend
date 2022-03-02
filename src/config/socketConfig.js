@@ -98,6 +98,10 @@ const connectSocket = (io) => {
       socket.on("disconnect", () => disconnectListener(socket));
     } catch (error) {
       console.log(error);
+      io.to(socket.id).emit("error", {
+        success: false,
+        message: error.message,
+      });
       socket.disconnect(true);
     }
   });
