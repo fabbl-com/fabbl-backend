@@ -12,6 +12,9 @@
     "format": "prettier --write '*.{js,ts,md,json}' --config ./.prettierrc"
   },
   "keywords": [],
+  "engines": {
+    "node": "14.x"
+  },
   "author": "Ichan Kabir <ichankabir@gmail.com>",
   "license": "ISC",
   "dependencies": {
