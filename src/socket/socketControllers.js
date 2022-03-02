@@ -308,7 +308,6 @@ export const getMessages = ({ sender, receiver, size, page }) => {
         },
       ]).exec((err, res) => {
         if (err) return reject(err);
-        console.log(res?.[0]);
         resolve(res?.[0]?.data);
       });
     } catch (error) {
