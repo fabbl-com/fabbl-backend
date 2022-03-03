@@ -1,6 +1,8 @@
 import passport from "passport";
 import jwt from "jsonwebtoken";
 import { validationResult } from "express-validator";
+import gravatar from "gravatar";
+import mongoose from "mongoose";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
@@ -17,6 +19,11 @@ import {
   DELETE_FROM_LIKE_SENT,
   DELETE_FROM_MATCHES,
 } from "../constants/index.js";
+import {
+  COOKIE_OPTIONS,
+  getRefreshToken,
+  getToken,
+} from "../../authenticate.js";
 
 export const register = (req, res, next) => {
   // Finds the validation errors in this request and wraps them in an object with handy functions
@@ -24,44 +31,66 @@ export const register = (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  passport.authenticate("local.register", (err, user, info) => {
-    console.log(err, user, info);
+  passport.authenticate("local.register", (err, user, tokens) => {
     if (err) return next(err);
-    if (info && !info.success) return res.status(401).json(info);
-    req.login(user, async (err) => {
-      if (err) return next(err);
-      const [notifications, profile] = await Promise.all([
-        getNotifications(user),
-        getProfile(user),
-      ]);
-      return res.status(200).json({ success: true, notifications, profile });
-    });
+    console.log(err, user, tokens);
+    const { accessToken, refreshToken } = tokens;
+    res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+    return res.status(200).json({ success: true, accessToken });
   })(req, res, next);
 };
 
 export const login = (req, res, next) => {
-  passport.authenticate("local.login", (err, user, info) => {
-    console.log(user);
-    if (err) return next(err);
-    if (!user)
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials.",
-      });
-    req.login(user, async (err) => {
-      if (err) return next(err);
-      if (req.body.rememberMe) {
-        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
-      } else {
-        req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
-      }
-      const [notifications, profile] = await Promise.all([
-        getNotifications(user),
-        getProfile(user),
-      ]);
-      return res.status(200).json({ success: true, notifications, profile });
-    });
+  passport.authenticate("local.login", async (err, user, tokens) => {
+    if (err)
+      return next(new ErrorMessage("Email or password is incorrect", 401));
+    console.log(err, user, tokens);
+    const { accessToken, refreshToken } = tokens;
+    const [notifications, profile] = await Promise.all([
+      getNotifications(user.id),
+      getProfile(user.id),
+    ]);
+    res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+    return res
+      .status(200)
+      .json({ success: true, notifications, profile, accessToken });
   })(req, res, next);
+};
+
+export const updateRefreshToken = async (req, res, next) => {
+  const { signedCookies = {} } = req;
+  const { refreshToken } = signedCookies;
+
+  console.log(refreshToken);
+
+  if (refreshToken) {
+    try {
+      const payload = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      );
+      console.log(payload);
+      const userId = payload._id;
+      const accessToken = getToken({ _id: userId });
+      const newRefreshToken = getRefreshToken({ _id: userId });
+      const result = await User.updateOne(
+        {
+          _id: mongoose.Types.ObjectId(userId),
+          // refreshToken: { $elemMatch: { refreshToken } },
+        },
+        { $set: { "refreshToken.$[elem].refreshToken": newRefreshToken } },
+        { arrayFilters: [{ "elem.refreshToken": refreshToken }] }
+      );
+
+      console.log(newRefreshToken, result);
+      if (!result.matchedCount || !result.acknowledged)
+        return next(new ErrorMessage("Unauthorized", 401));
+      res.cookie("refreshToken", newRefreshToken, COOKIE_OPTIONS);
+      res.status(200).json({ success: true, accessToken });
+    } catch (error) {
+      next(error);
+    }
+  }
 };
 
 export const sendResetPasswordMail = async (req, res, next) => {
@@ -226,9 +255,11 @@ export const updatePassword = async (req, res, next) => {
 };
 
 export const getUserProfile = async (req, res, next) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const publicKey = req.body?.publicKey;
   const privateKey = req.body?.privateKey;
+
+  console.log(req.body);
   try {
     const [notifications, profile, isKeysUpdated] = await Promise.all([
       getNotifications(userId),
@@ -274,13 +305,30 @@ export const changePassword = async (req, res, next) => {
   }
 };
 
+// export const logout = (req, res, next) => {
+//   req.session.destroy((err) => {
+//     if (err) {
+//       return next(err);
+//     }
+//     return res.status(200).json({ success: true, isLoggedOut: true });
+//   });
+// };
+
 export const logout = (req, res, next) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return next(err);
+  const { signedCookies = {} } = req;
+  const { refreshToken } = signedCookies;
+  User.findByIdAndUpdate(
+    req.user.id,
+    {
+      $pull: { refreshToken: { refreshToken } },
+    },
+    (err, result) => {
+      if (err) return next(err);
+      console.log(result);
+      res.clearCookie("refreshToken", COOKIE_OPTIONS);
+      return res.status(200).json({ success: true, isLoggedOut: true });
     }
-    return res.status(200).json({ success: true, isLoggedOut: true });
-  });
+  );
 };
 
 export const deleteAccount = async (req, res, next) => {

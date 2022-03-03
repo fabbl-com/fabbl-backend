@@ -14,6 +14,7 @@ import {
   changePassword,
   logout,
   deleteAccount,
+  updateRefreshToken,
 } from "./controllers/userControllers.js";
 // import { insertUser } from "./test/controllers.js";
 import { isAuth, sendVerificationMail } from "./middlewares/auth.js";
@@ -33,13 +34,14 @@ router.get("/", (req, res) => res.send("<h1>Hello from server</h1>"));
 // Auth Routes
 router.post(
   "/auth/register",
-  check("email", "enter valid email").isEmail(),
-  check("password", "password is require").exists(),
+  // check("email", "enter valid email").isEmail(),
+  // check("password", "password is require").exists(),
   register,
   sendVerificationMail
 );
 
 router.post("/auth/login", login);
+router.post("/auth/refreshToken", updateRefreshToken);
 
 router.get(
   "/auth/google",
@@ -81,7 +83,7 @@ router.post(
   check("email", "enter valid email").isEmail(),
   sendResetPasswordMail
 );
-router.get("/user/send-verify-email/:id", isAuth, sendVerificationMail);
+router.get("/user/send-verify-email/:id", sendVerificationMail);
 router.post(
   "/user/send-update-email/:id",
   check("email", "enter valid email").isEmail(),

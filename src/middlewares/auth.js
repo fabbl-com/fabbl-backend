@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import passport from "passport";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
@@ -7,16 +8,13 @@ export const sendVerificationMail = async (req, res, next) => {
   const userId = req.params.id;
 
   try {
-    const user = await User.findById(req.user || userId).select(
-      "email isEmailVerified"
-    );
-
+    const user = await User.findById(userId).select("email isEmailVerified");
+    console.log(user);
     if (!user) return next(new ErrorMessage("Register first", 400));
 
     jwt.sign(
       { userId: user._id },
       process.env.EMAIL_VERIFICATION_TOKEN_SECERT,
-      // { algorithm: "RS256" },
       { expiresIn: "30d" },
       async (err, emailVerificationToken) => {
         if (err) return next(err);
@@ -54,6 +52,10 @@ export const sendVerificationMail = async (req, res, next) => {
 };
 
 export const isAuth = (req, res, next) => {
-  if (req.isAuthenticated()) return next();
-  return next(new ErrorMessage("Access denied...", 401));
+  passport.authenticate("jwt", { session: false }, (err, user) => {
+    if (err) return next(err);
+    if (!user) return next(new ErrorMessage("Unathorized", 401));
+    req.user = { id: user.id, email: user.email };
+    next();
+  })(req, res, next);
 };

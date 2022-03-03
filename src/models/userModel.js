@@ -1,9 +1,14 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
+import passportLocalMongoose from "passport-local-mongoose";
 
 // 1===only me, 2===public, 3===friends
 const SALT_WORK_FACTOR = 12;
+
+const Session = new mongoose.Schema({
+  refreshToken: { type: String, default: "" },
+});
 
 const userSchema = mongoose.Schema(
   {
@@ -109,6 +114,7 @@ const userSchema = mongoose.Schema(
     lastLogin: { type: Date, default: Date.now },
     isProfileCompleted: { type: Boolean, default: false },
     isTestUser: { type: Boolean, default: false },
+    refreshToken: { type: [Session] },
   },
   { timestamps: true }
 );
@@ -134,6 +140,13 @@ userSchema.methods.comparePassword = async function (password, next) {
     else next(null, isMatched);
   });
 };
+
+userSchema.set("toJSON", {
+  transform(doc, ret, options) {
+    delete ret.refreshToken;
+    return ret;
+  },
+});
 
 const User = mongoose.model("User", userSchema);
 export default User;

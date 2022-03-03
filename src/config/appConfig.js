@@ -4,68 +4,54 @@ import cors from "cors";
 import logger from "morgan";
 import fileUpload from "express-fileupload";
 import passport from "passport";
+import cookieParser from "cookie-parser";
+import mongoose from "mongoose";
 
 // project imports
 import configurePassport from "../controllers/passport/index.js";
 import router from "../router.js";
 import handleError from "../middlewares/error.js";
-import sessionMiddleware from "../middlewares/session.js";
 
-const allowlist = [
-  "localhost",
-  "127.0.0.1",
-  "http://locahost:3000",
-  "http://127.0.0.1:3000",
-];
-const options = (req, cb) => {
-  let corsOptions;
-  if (allowlist.indexOf(req.header("Origin")) !== -1) {
-    corsOptions = { origin: true };
-  } else {
-    corsOptions = { origin: false };
-  }
-  cb(null, corsOptions);
+const whitelist = process.env.WHITELISTED_DOMAINS
+  ? process.env.WHITELISTED_DOMAINS.split(",")
+  : [];
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+
+  credentials: true,
 };
 
 const configureExpress = (app) => {
+  const url = process.env.DB_URL;
+  const connect = mongoose.connect(url, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+  connect
+    .then((db) => {
+      console.log("connected to db");
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+
   app.use(logger("dev"));
   app.use(compression());
   app.use(fileUpload({ useTempFiles: true }));
   app.use(express.json({ limit: "50mb" }));
+  app.use(cookieParser(process.env.COOKIE_SECRET));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  app.use(express.json());
   app.use(express.static("public"));
-  app.use(
-    express.urlencoded({
-      extended: true,
-    })
-  );
-  app.use(sessionMiddleware);
+  app.use(cors(corsOptions));
   app.use(passport.initialize());
-  app.use(passport.session());
-  app.use((req, res, next) => {
-    // Website you wish to allow to connect
-    res.setHeader("Access-Control-Allow-Origin", "*");
-
-    // Request methods you wish to allow
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET, POST, OPTIONS, PUT, PATCH, DELETE"
-    );
-
-    // Request headers you wish to allow
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "X-Requested-With,content-type"
-    );
-
-    // Set to true if you need the website to include cookies in the requests sent
-    // to the API (e.g. in case you use sessions)
-    res.setHeader("Access-Control-Allow-Credentials", true);
-
-    // Pass to next layer of middleware
-    next();
-  });
+  // app.use(passport.session());
   app.use("/", router);
   app.use(handleError);
 

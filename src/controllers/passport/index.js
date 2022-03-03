@@ -2,6 +2,7 @@ import { localRegisterStrategy, localLoginStrategy } from "./passport-local.js";
 import googleStrategy from "./passport-google.js";
 import facebookStrategy from "./passport-facebook.js";
 import User from "../../models/userModel.js";
+import jwtStrategy from "./jwtStrategy.js";
 
 const configurePassport = (passport) => {
   passport.serializeUser((userId, next) => {
@@ -19,6 +20,7 @@ const configurePassport = (passport) => {
   passport.use("local.login", localLoginStrategy);
   passport.use(googleStrategy);
   passport.use(facebookStrategy);
+  passport.use(jwtStrategy);
 };
 
 export default configurePassport;
