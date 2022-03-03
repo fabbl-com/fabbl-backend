@@ -1,7 +1,6 @@
 import passport from "passport";
 import jwt from "jsonwebtoken";
 import { validationResult } from "express-validator";
-import gravatar from "gravatar";
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
@@ -19,11 +18,7 @@ import {
   DELETE_FROM_LIKE_SENT,
   DELETE_FROM_MATCHES,
 } from "../constants/index.js";
-import {
-  COOKIE_OPTIONS,
-  getRefreshToken,
-  getToken,
-} from "../../authenticate.js";
+import { COOKIE_OPTIONS, getTokens } from "../utils/jwt.js";
 
 export const register = (req, res, next) => {
   // Finds the validation errors in this request and wraps them in an object with handy functions
@@ -71,8 +66,7 @@ export const updateRefreshToken = async (req, res, next) => {
       );
       console.log(payload);
       const userId = payload._id;
-      const accessToken = getToken({ _id: userId });
-      const newRefreshToken = getRefreshToken({ _id: userId });
+      const { accessToken, newRefreshToken } = getTokens({ _id: userId });
       const result = await User.updateOne(
         {
           _id: mongoose.Types.ObjectId(userId),
@@ -304,15 +298,6 @@ export const changePassword = async (req, res, next) => {
     next(err);
   }
 };
-
-// export const logout = (req, res, next) => {
-//   req.session.destroy((err) => {
-//     if (err) {
-//       return next(err);
-//     }
-//     return res.status(200).json({ success: true, isLoggedOut: true });
-//   });
-// };
 
 export const logout = (req, res, next) => {
   const { signedCookies = {} } = req;
