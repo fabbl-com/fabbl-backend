@@ -31,6 +31,7 @@ export const register = (req, res, next) => {
     console.log(err, user, tokens);
     const { accessToken, refreshToken } = tokens;
     res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+    // send email
     return res.status(200).json({ success: true, accessToken });
   })(req, res, next);
 };
@@ -39,7 +40,6 @@ export const login = (req, res, next) => {
   passport.authenticate("local.login", async (err, user, tokens) => {
     if (err)
       return next(new ErrorMessage("Email or password is incorrect", 401));
-    console.log(err, user, tokens);
     const { accessToken, refreshToken } = tokens;
     const [notifications, profile] = await Promise.all([
       getNotifications(user.id),
@@ -66,7 +66,10 @@ export const updateRefreshToken = async (req, res, next) => {
       );
       console.log(payload);
       const userId = payload._id;
-      const { accessToken, newRefreshToken } = getTokens({ _id: userId });
+      const { accessToken, newRefreshToken } = getTokens({
+        _id: userId,
+        rememberMe: false,
+      });
       const result = await User.updateOne(
         {
           _id: mongoose.Types.ObjectId(userId),

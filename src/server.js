@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 // project imports
 import configureExpress from "./config/appConfig.js";
 import connectSocket from "./config/socketConfig.js";
+import connectDB from "./config/db.js";
 
 dotenv.config();
 const app = express();
@@ -17,11 +18,13 @@ const io = new Server(server, {
   },
 });
 
+const { DB_URL, PORT = 4000 } = process.env;
+
+connectDB(DB_URL);
 configureExpress(app);
 connectSocket(io);
 
 // Run the server
-const PORT = process.env.PORT || 4000;
 server.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );

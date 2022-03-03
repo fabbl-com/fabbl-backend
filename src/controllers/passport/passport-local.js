@@ -30,7 +30,10 @@ export const localRegisterStrategy = new LocalStrategy(
         avatar: { value: avatar, status: 3 },
         password,
       });
-      const { accessToken, refreshToken } = getTokens({ _id: newUser._id });
+      const { accessToken, refreshToken } = getTokens({
+        _id: newUser._id,
+        rememberMe: req.body?.rememberMe || false,
+      });
       console.log(req.body, accessToken, refreshToken);
       newUser.refreshToken.push({ refreshToken });
       newUser.save((err, user) => {
@@ -55,9 +58,11 @@ export const localLoginStrategy = new LocalStrategy(
         if (err || !isMatched) return next(true);
       });
 
-      const { accessToken, refreshToken } = getTokens({ _id: user._id });
+      const { accessToken, refreshToken } = getTokens({
+        _id: user._id,
+        rememberMe: req.body.rememberMe || false,
+      });
 
-      console.log(user._id);
       User.findByIdAndUpdate(
         user._id,
         { $push: { refreshToken: { refreshToken } } },
