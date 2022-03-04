@@ -39,7 +39,10 @@ export const register = (req, res, next) => {
 export const login = (req, res, next) => {
   passport.authenticate("local.login", async (err, user, tokens) => {
     if (err)
-      return next(new ErrorMessage("Email or password is incorrect", 401));
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Credentials" });
+
     const { accessToken, refreshToken } = tokens;
     const [notifications, profile] = await Promise.all([
       getNotifications(user.id),
@@ -236,15 +239,14 @@ export const updatePassword = async (req, res, next) => {
       user.comparePassword(oldPassword, async (err, isMatched) => {
         if (err) return next(err);
         if (!isMatched)
-          return next(new ErrorMessage("Incorrect credentails", 401));
+          return next(new ErrorMessage("Invalid Credntials", 401));
+        user.password = newPassword;
+        user.save((err, doc) => {
+          if (err) return next(err);
+          return res.status(200).json({ success: true });
+        });
       });
     }
-
-    user.password = newPassword;
-    user.save((err, doc) => {
-      if (err) return next(err);
-      return res.status(200).json({ success: true });
-    });
   } catch (err) {
     console.error(err);
     next(err);
@@ -263,9 +265,21 @@ export const getUserProfile = async (req, res, next) => {
       getProfile(userId),
       updateKeys({ userId, publicKey, privateKey }),
     ]);
-    return res
-      .status(200)
-      .json({ success: true, notifications, profile, isKeysUpdated });
+
+    const { accessToken, refreshToken } = getTokens({
+      _id: userId,
+      rememberMe: true,
+    });
+
+    res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+
+    return res.status(200).json({
+      success: true,
+      notifications,
+      profile,
+      isKeysUpdated,
+      accessToken,
+    });
   } catch (error) {
     return next(error);
   }
