@@ -14,13 +14,11 @@ const googleStrategy = new GoogleStrategy(
     proxy: true,
   },
   (req, accessToken, refreshToken, profile, next) => {
-    console.log(accessToken, refreshToken, profile);
     User.findOne({ google: profile.id }, (err, user) => {
       if (err) return next(err);
       if (user) {
-        const sessUser = { id: user.id, email: user.email };
-        req.session.user = sessUser;
-        return next(null, user.id);
+        req.user = { id: user._id };
+        return next(null, user._id);
       }
       // console.log(user.id);
 

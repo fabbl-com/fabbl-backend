@@ -20,6 +20,8 @@ import {
 } from "../constants/index.js";
 import { COOKIE_OPTIONS, getTokens } from "../utils/jwt.js";
 
+const { CLIENT_URL } = process.env;
+
 export const register = (req, res, next) => {
   // Finds the validation errors in this request and wraps them in an object with handy functions
   const errors = validationResult(req);
@@ -93,6 +95,16 @@ export const updateRefreshToken = async (req, res, next) => {
   }
 };
 
+export const googleLogin = async (req, res) => {
+  const userId = req.user;
+  const { accessToken, refreshToken } = getTokens({
+    _id: userId,
+    rememberMe: true,
+  });
+  res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+  res.redirect(`${CLIENT_URL}?userId=${req.user}&accessToken=${accessToken}`);
+};
+
 export const sendResetPasswordMail = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -116,7 +128,7 @@ export const sendResetPasswordMail = async (req, res, next) => {
         console.log(err, passwordResetToken);
         if (err) return next(err);
 
-        const URL = `${process.env.CLIENT_URL}/user/reset-password/?token=${passwordResetToken}`;
+        const URL = `${CLIENT_URL}/user/reset-password/?token=${passwordResetToken}`;
         console.log(URL);
         try {
           const result = await sendMail(email, URL, "reset");
@@ -170,7 +182,7 @@ export const sendUpdateEmail = async (req, res, next) => {
         if (err) return next(new ErrorMessage(err.message, 401));
 
         try {
-          const URL = `${process.env.CLIENT_URL}/user/verify-email/?token=${passwordResetToken}`;
+          const URL = `${CLIENT_URL}/user/verify-email/?token=${passwordResetToken}`;
 
           const result = await sendMail(email, URL, "activate");
           if (!result)
@@ -258,7 +270,6 @@ export const getUserProfile = async (req, res, next) => {
   const publicKey = req.body?.publicKey;
   const privateKey = req.body?.privateKey;
 
-  console.log(req.body);
   try {
     const [notifications, profile, isKeysUpdated] = await Promise.all([
       getNotifications(userId),

@@ -15,6 +15,7 @@ import {
   logout,
   deleteAccount,
   updateRefreshToken,
+  googleLogin,
 } from "./controllers/userControllers.js";
 // import { insertUser } from "./test/controllers.js";
 import { isAuth, sendVerificationMail } from "./middlewares/auth.js";
@@ -25,6 +26,9 @@ import {
   imageUpload,
 } from "./controllers/profileControllers.js";
 import { deleteMessage } from "./controllers/messageControllers.js";
+import keys from "./config/keys.js";
+
+const { CLIENT_URL } = process.env;
 
 const router = express.Router();
 
@@ -34,8 +38,8 @@ router.get("/", (req, res) => res.send("<h1>Hello from server</h1>"));
 // Auth Routes
 router.post(
   "/auth/register",
-  // check("email", "enter valid email").isEmail(),
-  // check("password", "password is require").exists(),
+  check("email", "enter valid email").isEmail(),
+  check("password", "password is require").exists(),
   register,
   sendVerificationMail
 );
@@ -45,21 +49,13 @@ router.post("/auth/refreshToken", updateRefreshToken);
 
 router.get(
   "/auth/google",
-  passport.authenticate("google", {
-    scope: [
-      "https://www.googleapis.com/auth/plus.login",
-      "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile",
-    ],
-  })
+  passport.authenticate("google", { scope: keys.google.scope })
 );
 
 router.get(
   "/auth/google/callback",
   passport.authenticate("google"),
-  (req, res) => {
-    res.redirect(`http://localhost:3000?userId=${req.user}`);
-  }
+  googleLogin
 );
 
 router.get("/auth/facebook", passport.authenticate("facebook"));
@@ -68,7 +64,7 @@ router.get(
   "/auth/facebook/callback",
   passport.authenticate("facebook"),
   (req, res) => {
-    res.redirect(`http://localhost:3000?userId=${req.user}`);
+    res.redirect(`${CLIENT_URL}?userId=${req.user}`);
   }
 );
 

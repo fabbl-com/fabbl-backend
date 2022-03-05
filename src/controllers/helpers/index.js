@@ -114,7 +114,6 @@ export const updateKeys = ({ userId, publicKey, privateKey }) =>
         },
         { $upsert: true },
         (err, doc) => {
-          console.log(doc);
           if (err) return reject(err);
           resolve(doc.modifiedCount);
         }
