@@ -40,9 +40,8 @@ const googleStrategy = new GoogleStrategy(
         { new: true, upsert: true },
         (err, user) => {
           if (err) return next(err);
-          const sessUser = { id: user.id, email: user.email };
-          req.session.user = sessUser;
-          return next(null, user.id);
+          req.user = { id: user._id };
+          return next(null, user._id);
         }
       );
     });

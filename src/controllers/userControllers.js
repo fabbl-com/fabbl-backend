@@ -1,3 +1,4 @@
+/* eslint-disable no-eval */
 import passport from "passport";
 import jwt from "jsonwebtoken";
 import { validationResult } from "express-validator";
@@ -20,30 +21,50 @@ import {
 } from "../constants/index.js";
 import { COOKIE_OPTIONS, getTokens } from "../utils/jwt.js";
 
-const { CLIENT_URL } = process.env;
+const {
+  EMAIL_VERIFICATION_TOKEN_SECERT,
+  CLIENT_URL,
+  EMAIL_VERIFICATION_TOKEN_EXPIRES_IN,
+} = process.env;
 
 export const register = (req, res, next) => {
-  // Finds the validation errors in this request and wraps them in an object with handy functions
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  passport.authenticate("local.register", (err, user, tokens) => {
-    if (err) return next(err);
-    console.log(err, user, tokens);
-    const { accessToken, refreshToken } = tokens;
-    res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
-    // send email
-    return res.status(200).json({ success: true, accessToken });
+  passport.authenticate("local.register", async (err, user, tokens) => {
+    if (err) return next("Something went wrong", 400);
+
+    jwt.sign(
+      { userId: user._id },
+      EMAIL_VERIFICATION_TOKEN_SECERT,
+      { expiresIn: eval(EMAIL_VERIFICATION_TOKEN_EXPIRES_IN) },
+      async (err, emailVerificationToken) => {
+        if (err) return next(err);
+        try {
+          const activationURL = `${CLIENT_URL}/user/verify-email/?token=${emailVerificationToken}`;
+          const result = await sendMail(user.email, activationURL, "activate");
+        } catch (error) {
+          console.log(error);
+          // next(error);
+        } finally {
+          const { accessToken, refreshToken } = tokens;
+          res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+          res.status(200).json({
+            success: true,
+            accessToken,
+            userId: user._id,
+            message: "Register Success! Please activate your email to start.",
+          });
+        }
+      }
+    );
   })(req, res, next);
 };
 
 export const login = (req, res, next) => {
   passport.authenticate("local.login", async (err, user, tokens) => {
-    if (err)
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid Credentials" });
+    if (err) return next("Invalid Credentials", 401);
 
     const { accessToken, refreshToken } = tokens;
     const [notifications, profile] = await Promise.all([

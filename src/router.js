@@ -41,8 +41,7 @@ router.post(
   "/auth/register",
   check("email", "enter valid email").isEmail(),
   check("password", "password is require").exists(),
-  register,
-  sendVerificationMail
+  register
 );
 
 router.post("/auth/login", login);
@@ -116,6 +115,6 @@ router.post("/user/upload/image/:id", imageUpload);
 
 router.delete("/delete-message/:id", deleteMessage);
 
-router.post("/user/set-gender", isAuth, setGender);
+router.post("/user/verify-gender", isAuth, setGender);
 
 export default router;

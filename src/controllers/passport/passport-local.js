@@ -38,7 +38,7 @@ export const localRegisterStrategy = new LocalStrategy(
       newUser.refreshToken.push({ refreshToken });
       newUser.save((err, user) => {
         if (err) return next(err);
-        next(null, user.id, { accessToken, refreshToken });
+        next(null, { _id: user.id, email }, { accessToken, refreshToken });
       });
     });
   }
@@ -68,6 +68,7 @@ export const localLoginStrategy = new LocalStrategy(
         { $push: { refreshToken: { refreshToken } } },
         (err, user) => {
           if (err) return next(err);
+          req.user = { id: user._id };
           next(null, { id: user._id }, { accessToken, refreshToken });
         }
       );

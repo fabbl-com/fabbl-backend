@@ -107,7 +107,7 @@ export const updatePersonalData = async (req, res, next) => {
       userId,
       { $set: profileData },
       { new: true }
-    ).select(-password);
+    ).select("-password");
     if (!profile) return next(new ErrorMessage("Something went wrong...", 400));
     return res.status(200).json({ success: true, profile });
   } catch (err) {
@@ -155,21 +155,20 @@ export const imageUpload = async (req, res) => {
   }
 };
 
-export const setGender = async (req, res) => {
+export const setGender = async (req, res, next) => {
   const { gender } = req.body;
   const userId = req.user.id;
+  console.log(gender, userId);
   try {
     const profile = await User.findByIdAndUpdate(
       userId,
       { $set: { "gender.value": gender } },
       { new: true }
-    ).select(-password);
-    if (!profile) return next(new ErrorMessage("Something went wrong...", 400));
+    ).select("-password");
+    if (!profile) return next(new ErrorMessage("Profile not found...", 400));
     return res.status(200).json({ success: true, profile });
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ success: false, message: "there is no profile for user" });
+    res.status(500).json({ success: false, message: "Something went wrong" });
   }
 };

@@ -30,6 +30,7 @@ const sendMail = (to, url, mailType) =>
         clientSecret: keys.google.clientSecret,
         refreshToken,
         accessToken,
+        expires: 1705066697598,
       },
     });
 
