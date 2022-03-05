@@ -24,6 +24,7 @@ import {
   updateSettings,
   updatePersonalData,
   imageUpload,
+  setGender,
 } from "./controllers/profileControllers.js";
 import { deleteMessage } from "./controllers/messageControllers.js";
 import keys from "./config/keys.js";
@@ -114,5 +115,7 @@ router.post("/user/change-password", changePassword);
 router.post("/user/upload/image/:id", imageUpload);
 
 router.delete("/delete-message/:id", deleteMessage);
+
+router.post("/user/set-gender", isAuth, setGender);
 
 export default router;
