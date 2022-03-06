@@ -1,8 +1,10 @@
 import jwt from "jsonwebtoken";
 import passport from "passport";
+import mongoose from "mongoose";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import sendMail from "../utils/sendMail.js";
+import { COOKIE_OPTIONS, getTokens } from "../utils/jwt.js";
 
 export const sendVerificationMail = async (req, res, next) => {
   const userId = req.params.id;
@@ -52,10 +54,54 @@ export const sendVerificationMail = async (req, res, next) => {
 };
 
 export const isAuth = (req, res, next) => {
-  passport.authenticate("jwt", { session: false }, (err, user) => {
+  passport.authenticate("jwt", { session: false }, async (err, user) => {
     if (err) return next(err);
-    if (!user) return next(new ErrorMessage("Unathorized", 401));
-    req.user = { id: user.id, email: user.email };
-    next();
+    if (!user) return next(new ErrorMessage("Unauthorized", 401));
+
+    const { signedCookies = {} } = req;
+    const { refreshToken } = signedCookies;
+
+    const { accessToken, refreshToken: newRefreshToken } = getTokens({
+      _id: user.id,
+      rememberMe: false,
+    });
+
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
+      async (err, payload) => {
+        if (err) return next(new ErrorMessage("Unauthorized", 401));
+
+        if (!payload) {
+          await User.findByIdAndUpdate(req.user.id, {
+            $pull: { refreshToken: { refreshToken } },
+          });
+          return next(new ErrorMessage("Unauthorized", 401));
+        }
+        try {
+          const result = await User.updateOne(
+            {
+              _id: mongoose.Types.ObjectId(user._id),
+              "refreshToken.refreshToken": refreshToken,
+            },
+            { $set: { "refreshToken.$.refreshToken": newRefreshToken } }
+          );
+          if (!result.matchedCount || !result.acknowledged)
+            return next(new ErrorMessage("Unauthorized", 401));
+          req.user = {
+            id: user.id,
+            email: user.email,
+            accessToken,
+            oldRefreshToken: refreshToken,
+            newRefreshToken,
+          };
+          res.cookie("refreshToken", newRefreshToken, COOKIE_OPTIONS);
+          next();
+        } catch (err) {
+          console.log(err);
+          return next(new ErrorMessage("Unauthorized", 401));
+        }
+      }
+    );
   })(req, res, next);
 };

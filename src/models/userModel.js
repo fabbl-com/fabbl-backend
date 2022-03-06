@@ -1,14 +1,16 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
-import passportLocalMongoose from "passport-local-mongoose";
 
 // 1===only me, 2===public, 3===friends
 const SALT_WORK_FACTOR = 12;
 
-const Session = new mongoose.Schema({
-  refreshToken: { type: String, default: "" },
-});
+const Session = new mongoose.Schema(
+  {
+    refreshToken: { type: String, default: "" },
+  },
+  { expireAfterSeconds: 10 }
+);
 
 const userSchema = mongoose.Schema(
   {
@@ -109,8 +111,8 @@ const userSchema = mongoose.Schema(
       theme: { type: Number, default: 1 }, // 1===dark, 0===light
       autoDelete: { type: Number, default: 10 }, // [10, 20, 15, 5]
     },
-    publicKey: String,
-    privateKey: String,
+    publicKey: { type: String, default: "" },
+    privateKey: { type: String, default: "" },
     lastLogin: { type: Date, default: Date.now },
     isProfileCompleted: { type: Boolean, default: false },
     isTestUser: { type: Boolean, default: false },

@@ -69,6 +69,7 @@ export const getProfile = (userId) =>
             settings: 1,
             lastLogin: 1,
             isProfileCompleted: 1,
+            isProfileVerified: 1,
             privateKey: 1,
             publicKey: 1,
             createdAt: 1,

@@ -64,9 +64,10 @@ export const register = (req, res, next) => {
 
 export const login = (req, res, next) => {
   passport.authenticate("local.login", async (err, user, tokens) => {
-    if (err) return next("Invalid Credentials", 401);
+    if (err) return next(new ErrorMessage("Invalid Credentials", 401));
 
     const { accessToken, refreshToken } = tokens;
+    console.log(refreshToken, "2");
     const [notifications, profile] = await Promise.all([
       getNotifications(user.id),
       getProfile(user.id),
@@ -99,13 +100,12 @@ export const updateRefreshToken = async (req, res, next) => {
       const result = await User.updateOne(
         {
           _id: mongoose.Types.ObjectId(userId),
-          // refreshToken: { $elemMatch: { refreshToken } },
+          refreshToken: { $elemMatch: { refreshToken } },
         },
         { $set: { "refreshToken.$[elem].refreshToken": newRefreshToken } },
         { arrayFilters: [{ "elem.refreshToken": refreshToken }] }
       );
-
-      console.log(newRefreshToken, result);
+      console.log(result);
       if (!result.matchedCount || !result.acknowledged)
         return next(new ErrorMessage("Unauthorized", 401));
       res.cookie("refreshToken", newRefreshToken, COOKIE_OPTIONS);
@@ -288,6 +288,7 @@ export const updatePassword = async (req, res, next) => {
 
 export const getUserProfile = async (req, res, next) => {
   const userId = req.user.id;
+  const { accessToken } = req.user;
   const publicKey = req.body?.publicKey;
   const privateKey = req.body?.privateKey;
 
@@ -297,13 +298,6 @@ export const getUserProfile = async (req, res, next) => {
       getProfile(userId),
       updateKeys({ userId, publicKey, privateKey }),
     ]);
-
-    const { accessToken, refreshToken } = getTokens({
-      _id: userId,
-      rememberMe: true,
-    });
-
-    res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
 
     return res.status(200).json({
       success: true,
@@ -349,16 +343,14 @@ export const changePassword = async (req, res, next) => {
 };
 
 export const logout = (req, res, next) => {
-  const { signedCookies = {} } = req;
-  const { refreshToken } = signedCookies;
+  const { newRefreshToken } = req.user;
   User.findByIdAndUpdate(
     req.user.id,
     {
-      $pull: { refreshToken: { refreshToken } },
+      $pull: { refreshToken: { refreshToken: newRefreshToken } },
     },
     (err, result) => {
       if (err) return next(err);
-      console.log(result);
       res.clearCookie("refreshToken", COOKIE_OPTIONS);
       return res.status(200).json({ success: true, isLoggedOut: true });
     }
