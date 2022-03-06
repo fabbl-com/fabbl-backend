@@ -64,7 +64,7 @@ export const register = (req, res, next) => {
 
 export const login = (req, res, next) => {
   passport.authenticate("local.login", async (err, user, tokens) => {
-    if (err) return next("Invalid Credentials", 401);
+    if (err) return next(new ErrorMessage("Invalid Credentials", 401));
 
     const { accessToken, refreshToken } = tokens;
     const [notifications, profile] = await Promise.all([

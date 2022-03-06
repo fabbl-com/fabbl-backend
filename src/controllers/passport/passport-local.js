@@ -16,7 +16,7 @@ export const localRegisterStrategy = new LocalStrategy(
     const { displayName } = req.body;
     User.findOne({ email }, (err, oldUser) => {
       if (err) return next(err);
-      if (oldUser) return next(new ErrorMessage("Already Registered", 400));
+      if (oldUser) return next(new ErrorMessage("Already Registered", 401));
 
       const avatar = gravatar.url(
         email,
@@ -52,26 +52,27 @@ export const localLoginStrategy = new LocalStrategy(
   },
   (req, email, password, next) => {
     User.findOne({ email }, (err, user) => {
-      if (err || !user) return next(true);
+      if (err) return next(err);
+      if (!user) return next(new ErrorMessage("Invalid Credenitals", 401));
 
       user.comparePassword(password, (err, isMatched) => {
-        if (err || !isMatched) return next(true);
-      });
+        if (err || !isMatched)
+          return next(new ErrorMessage("Invalid Credenitals", 401));
+        const { accessToken, refreshToken } = getTokens({
+          _id: user._id,
+          rememberMe: req.body.rememberMe || false,
+        });
 
-      const { accessToken, refreshToken } = getTokens({
-        _id: user._id,
-        rememberMe: req.body.rememberMe || false,
+        User.findByIdAndUpdate(
+          user._id,
+          { $push: { refreshToken: { refreshToken } } },
+          (err, user) => {
+            if (err) return next(err);
+            req.user = { id: user._id };
+            next(null, { id: user._id }, { accessToken, refreshToken });
+          }
+        );
       });
-
-      User.findByIdAndUpdate(
-        user._id,
-        { $push: { refreshToken: { refreshToken } } },
-        (err, user) => {
-          if (err) return next(err);
-          req.user = { id: user._id };
-          next(null, { id: user._id }, { accessToken, refreshToken });
-        }
-      );
     });
   }
 );
