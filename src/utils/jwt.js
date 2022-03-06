@@ -16,7 +16,7 @@ export const getTokens = ({ _id, rememberMe }) => {
     expiresIn: rememberMe ? "7d" : eval(process.env.REFRESH_TOKEN_EXPIRY),
   });
   const accessToken = jwt.sign({ _id }, process.env.JWT_SECRET, {
-    expiresIn: eval(process.env.ACCESS_TOKEN_EXPIRY),
+    expiresIn: rememberMe ? "30d" : eval(process.env.ACCESS_TOKEN_EXPIRY),
   });
 
   return { accessToken, refreshToken };

@@ -53,19 +53,25 @@ export const localLoginStrategy = new LocalStrategy(
   (req, email, password, next) => {
     User.findOne({ email }, (err, user) => {
       if (err) return next(err);
-      if (!user) return next(new ErrorMessage("Invalid Credenitals", 401));
+      if (!user) return next(new ErrorMessage("Invalid Credentials", 401));
 
       user.comparePassword(password, (err, isMatched) => {
         if (err || !isMatched)
-          return next(new ErrorMessage("Invalid Credenitals", 401));
+          return next(new ErrorMessage("Invalid Credentials", 401));
         const { accessToken, refreshToken } = getTokens({
           _id: user._id,
           rememberMe: req.body.rememberMe || false,
         });
 
+        console.log(refreshToken, "1");
+
         User.findByIdAndUpdate(
           user._id,
-          { $push: { refreshToken: { refreshToken } } },
+          {
+            $push: {
+              refreshToken: { refreshToken },
+            },
+          },
           (err, user) => {
             if (err) return next(err);
             req.user = { id: user._id };

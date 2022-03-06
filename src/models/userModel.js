@@ -1,14 +1,16 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
-import passportLocalMongoose from "passport-local-mongoose";
 
 // 1===only me, 2===public, 3===friends
 const SALT_WORK_FACTOR = 12;
 
-const Session = new mongoose.Schema({
-  refreshToken: { type: String, default: "" },
-});
+const Session = new mongoose.Schema(
+  {
+    refreshToken: { type: String, default: "" },
+  },
+  { expireAfterSeconds: 10 }
+);
 
 const userSchema = mongoose.Schema(
   {
