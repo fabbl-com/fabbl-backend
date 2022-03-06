@@ -162,7 +162,7 @@ export const setGender = async (req, res, next) => {
   try {
     const profile = await User.findByIdAndUpdate(
       userId,
-      { $set: { "gender.value": gender } },
+      { $set: { "gender.value": gender, isProfileVerified: true } },
       { new: true }
     ).select("-password");
     if (!profile) return next(new ErrorMessage("Profile not found...", 400));
