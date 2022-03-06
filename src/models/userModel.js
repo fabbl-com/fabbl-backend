@@ -111,8 +111,8 @@ const userSchema = mongoose.Schema(
       theme: { type: Number, default: 1 }, // 1===dark, 0===light
       autoDelete: { type: Number, default: 10 }, // [10, 20, 15, 5]
     },
-    publicKey: String,
-    privateKey: String,
+    publicKey: { type: String, default: "" },
+    privateKey: { type: String, default: "" },
     lastLogin: { type: Date, default: Date.now },
     isProfileCompleted: { type: Boolean, default: false },
     isTestUser: { type: Boolean, default: false },

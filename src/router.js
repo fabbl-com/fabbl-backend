@@ -86,7 +86,7 @@ router.post(
   isAuth,
   sendUpdateEmail
 );
-router.get("/user/verify-email/:token", isAuth, verifyEmail);
+router.get("/user/verify-email/:token", verifyEmail);
 
 // profile routes
 router.get("/user/profile/:id", isAuth, currentUserProfile);

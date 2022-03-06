@@ -52,6 +52,7 @@ export const localLoginStrategy = new LocalStrategy(
   },
   (req, email, password, next) => {
     User.findOne({ email }, (err, user) => {
+      console.log(email, password, err, user);
       if (err) return next(err);
       if (!user) return next(new ErrorMessage("Invalid Credentials", 401));
 
