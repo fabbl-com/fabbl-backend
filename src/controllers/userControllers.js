@@ -116,12 +116,21 @@ export const updateRefreshToken = async (req, res, next) => {
   }
 };
 
-export const googleLogin = async (req, res) => {
+export const googleLogin = async (req, res, next) => {
   const userId = req.user;
   const { accessToken, refreshToken } = getTokens({
     _id: userId,
     rememberMe: true,
   });
+
+  User.findByIdAndUpdate(
+    userId,
+    { $set: { refreshToken: { refreshToken } } },
+    (err, doc) => {
+      if (err) return next(err);
+    }
+  );
+
   res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
   res.redirect(`${CLIENT_URL}?userId=${req.user}&accessToken=${accessToken}`);
 };
