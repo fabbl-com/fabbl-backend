@@ -1,9 +1,9 @@
 import cloudinary from "cloudinary";
 import { validationResult } from "express-validator";
+import Fs from "fs";
 import User from "../models/userModel.js";
 import ErrorMessage from "../utils/errorMessage.js";
 import keys from "../config/keys.js";
-import { getProfile } from "./helpers/index.js";
 // @route     GET  /user/profile/:id
 // desc         get current user profile
 // @access  private
@@ -139,19 +139,21 @@ export const imageUpload = async (req, res) => {
         folder: "fabbl",
       }
     );
-    console.log(uploadResponse);
     const fileExt = imageFile.name.split(".")[1];
     const avatar = `${keys.cloudinary.PROFILE_URL}/${userId}.${fileExt}`;
+    console.log(uploadResponse, avatar);
 
     const profile = await User.findByIdAndUpdate(
       userId,
       { $set: { "avatar.value": avatar } },
       { new: true }
     ).select("avatar");
-    return res.status(200).json({ success: true, avatar: profile.avatar });
+    res.status(200).json({ success: true, avatar: profile.avatar });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "unable to upload" });
+  } finally {
+    Fs.unlinkSync(imageFile.tempFilePath);
   }
 };
 
